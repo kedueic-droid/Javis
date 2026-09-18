@@ -22,6 +22,7 @@ export function ResizeHandle({
   return (
     <div
       role="separator"
+      data-no-scene-drag
       aria-orientation={vertical ? "vertical" : "horizontal"}
       aria-label={label}
       title={label}

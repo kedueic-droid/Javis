@@ -56,10 +56,17 @@ select {
 .hud-root {
   --hud-px: 0;
   --hud-py: 0;
+  --hud-yaw: 0;
+  --hud-pitch: 0;
+  --hud-pan-x: 0px;
+  --hud-pan-y: 0px;
+  --hud-dolly: 0px;
+  --hud-dragging: 0;
   position: relative;
   height: 100dvh;
   isolation: isolate;
   overflow: hidden;
+  overscroll-behavior: none;
   background:
     radial-gradient(ellipse 80% 55% at 50% 42%, rgba(0, 140, 180, 0.16), transparent 58%),
     radial-gradient(ellipse 40% 30% at 12% 88%, rgba(0, 80, 140, 0.12), transparent 70%),
@@ -67,32 +74,115 @@ select {
     #02060c;
 }
 
+.hud-root[data-hud-dragging="1"] {
+  user-select: none;
+  cursor: grabbing;
+}
+
+.hud-root[data-hud-dragging="1"] * {
+  cursor: grabbing !important;
+}
+
+.hud-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  perspective: 820px;
+  perspective-origin: 50% 44%;
+}
+
+.hud-world {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 46%;
+  transform:
+    translate3d(var(--hud-pan-x), var(--hud-pan-y), var(--hud-dolly))
+    rotateX(calc(var(--hud-pitch) * 1deg))
+    rotateY(calc(var(--hud-yaw) * 1deg));
+  will-change: transform;
+  cursor: grab;
+}
+
+.hud-ui,
+.hud-workspace,
+.hud-main,
+.hud-obj,
+.hud-card-slot,
+.hud-orbit-wrap,
+.hud-orbit {
+  transform-style: preserve-3d;
+}
+
+.hud-obj-top {
+  translate: 0 0 48px;
+  rotate: x 6deg;
+}
+
+.hud-obj-wordmark {
+  translate: 0 0 28px;
+  transform-style: preserve-3d;
+}
+
+.hud-obj-rail {
+  translate: 0 0 -36px;
+  rotate: y 8deg;
+}
+
+.hud-obj-launcher {
+  translate: 0 0 12px;
+}
+
+.hud-obj-embed {
+  translate: 0 0 72px;
+}
+
+.hud-obj-status {
+  translate: 0 0 32px;
+  rotate: x -7deg;
+}
+
+.hud-obj-core {
+  translate: 0 0 40px;
+}
+
 .hud-scene {
   pointer-events: none;
   position: absolute;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
-  perspective: 1600px;
-  perspective-origin: 50% 42%;
+  overflow: visible;
   transform-style: preserve-3d;
+}
+
+.hud-wordmark-ghost {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  translate: -50% -50% -260px;
+  font-family: var(--font-hud);
+  font-size: clamp(4rem, 16vw, 13rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(0, 229, 255, 0.07);
+  text-shadow: 0 0 42px rgba(0, 229, 255, 0.12);
+  white-space: nowrap;
+  user-select: none;
+  mix-blend-mode: screen;
 }
 
 .hud-layer-far {
   position: absolute;
-  inset: -14%;
-  transform:
-    translate3d(calc(var(--hud-px) * -30px), calc(var(--hud-py) * -18px), -240px)
-    scale(1.16);
+  inset: -16%;
+  translate: 0 0 -320px;
+  scale: 1.22;
   filter: blur(0.65px);
-  will-change: transform;
 }
 
 .hud-layer-mid {
   position: absolute;
   inset: 0;
-  transform: translate3d(calc(var(--hud-px) * -12px), calc(var(--hud-py) * -8px), -90px);
-  will-change: transform;
+  translate: 0 0 -90px;
 }
 
 .hud-layer-floor {
@@ -106,17 +196,16 @@ select {
     linear-gradient(90deg, rgba(0, 229, 255, 0.08) 1px, transparent 1px);
   background-size: 52px 52px;
   mask-image: radial-gradient(ellipse 48% 52% at 50% 18%, #000 10%, transparent 72%);
-  transform:
-    translate3d(calc(-50% + var(--hud-px) * -22px), calc(-18% + var(--hud-py) * 10px), -170px)
-    rotateX(66deg);
+  transform: translate3d(-50%, -18%, -220px) rotateX(66deg);
   transform-origin: center top;
   opacity: 0.7;
-  will-change: transform;
 }
 
-.hud-chrome {
-  transform: translate3d(calc(var(--hud-px) * 4px), calc(var(--hud-py) * 2.5px), 0);
-  will-change: transform;
+.hud-postfx {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
 }
 
 .hud-grid {
@@ -154,12 +243,11 @@ select {
   z-index: 1;
   width: 46vmax;
   height: 46vmax;
-  left: calc(50% + var(--hud-px) * 18%);
-  top: calc(46% + var(--hud-py) * 16%);
+  left: calc(50% + var(--hud-pan-x) * 0.12);
+  top: calc(46% + var(--hud-pan-y) * 0.12);
   transform: translate(-50%, -50%);
   background: radial-gradient(circle, rgba(0, 229, 255, 0.16), rgba(61, 158, 255, 0.04) 42%, transparent 68%);
   mix-blend-mode: screen;
-  will-change: left, top;
 }
 
 .hud-canvas {
@@ -170,6 +258,7 @@ select {
   width: 100%;
   height: 100%;
   mix-blend-mode: screen;
+  translate: 0 0 -40px;
 }
 
 .holo-field {
@@ -178,7 +267,8 @@ select {
   top: 42%;
   width: min(72vw, 760px);
   height: min(72vw, 760px);
-  transform: translate(-50%, -50%) rotateX(12deg);
+  translate: -50% -50% 0;
+  rotate: x 16deg;
   transform-style: preserve-3d;
 }
 
@@ -195,17 +285,20 @@ select {
 .holo-ring-a {
   inset: 4%;
   border-style: dashed;
+  translate: 0 0 34px;
 }
 
 .holo-ring-b {
   inset: 16%;
   border-color: rgba(61, 158, 255, 0.3);
+  translate: 0 0 0;
 }
 
 .holo-ring-c {
   inset: 28%;
   border-width: 2px;
   opacity: 0.7;
+  translate: 0 0 -36px;
 }
 
 .holo-core {
@@ -214,7 +307,7 @@ select {
   top: 50%;
   width: 18%;
   height: 18%;
-  transform: translate(-50%, -50%);
+  translate: -50% -50% 18px;
   border-radius: 999px;
   background: radial-gradient(circle, rgba(0, 229, 255, 0.2), transparent 70%);
 }
@@ -227,20 +320,84 @@ select {
   height: 24%;
   border: 1px solid rgba(0, 229, 255, 0.16);
   border-radius: 50%;
-  transform: rotateX(68deg);
+  rotate: x 68deg;
+  translate: 0 0 -20px;
 }
 
-.hud-orbit-wrap {
-  perspective: 1280px;
-  transform-style: preserve-3d;
-}
-
+.hud-orbit-wrap,
 .hud-orbit {
   transform-style: preserve-3d;
-  transform:
-    rotateX(calc(4deg + var(--hud-py) * 3deg))
-    rotateY(calc(var(--hud-px) * -5deg));
-  will-change: transform;
+}
+
+.hud-world button,
+.hud-world a {
+  cursor: pointer;
+}
+
+.hud-world input,
+.hud-world textarea,
+.hud-world select {
+  cursor: text;
+}
+
+.scene-grip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(0, 229, 255, 0.42);
+  background: rgba(0, 36, 54, 0.45);
+  color: #9bebff;
+  padding: 0.42rem 0.75rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.08);
+}
+
+.scene-grip:hover,
+.scene-grip:focus-visible {
+  border-color: rgba(0, 229, 255, 0.8);
+  background: rgba(0, 50, 72, 0.6);
+}
+
+.hud-root[data-hud-dragging="1"] .scene-grip {
+  cursor: grabbing;
+  border-color: #00e5ff;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.28);
+}
+
+.scene-grip-reticle {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border: 1px solid #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.45);
+}
+
+.scene-grip-reticle::before,
+.scene-grip-reticle::after {
+  content: "";
+  position: absolute;
+  background: #00e5ff;
+}
+
+.scene-grip-reticle::before {
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.scene-grip-reticle::after {
+  top: 50%;
+  left: -3px;
+  right: -3px;
+  height: 1px;
+  transform: translateY(-50%);
 }
 
 .scanlines {
@@ -392,7 +549,7 @@ select {
 }
 
 .embed-stage {
-  transform: translateZ(18px);
+  translate: 0 0 18px;
   box-shadow:
     0 18px 48px rgba(0, 0, 0, 0.45),
     0 0 32px rgba(0, 229, 255, 0.14),
@@ -500,23 +657,8 @@ textarea::placeholder {
     animation: none !important;
   }
 
-  .hud-layer-far {
-    transform: translate3d(0, 0, -180px) scale(1.08);
-    filter: blur(0.4px);
-  }
-
-  .hud-layer-mid {
-    transform: translate3d(0, 0, -70px);
-  }
-
-  .hud-layer-floor {
-    transform: translate3d(-50%, -18%, -140px) rotateX(66deg);
-  }
-
-  .hud-orbit,
-  .holo-card,
-  .hud-chrome {
-    transform: none;
+  .hud-world,
+  .holo-card {
     will-change: auto;
   }
 
