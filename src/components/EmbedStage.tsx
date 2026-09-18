@@ -13,28 +13,27 @@ export function EmbedStage({ app, shieldPointer, onClose, onOpenTab }: EmbedStag
       className="embed-stage panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       aria-label={`${app.name} 內嵌舞台`}
     >
-      <header className="flex flex-wrap items-center gap-3 border-b border-cyan-400/20 px-3 py-2.5 md:px-4">
+      <header className="flex shrink-0 items-center gap-2 border-b border-cyan-400/20 px-3 py-2.5 md:px-4">
         <div className="min-w-0 flex-1">
           <p className="font-hud text-[10px] tracking-[0.3em] text-cyan-400/80">EMBEDDED STAGE</p>
           <h2 className="truncate text-base text-cyan-50">{app.name}</h2>
         </div>
-        <p className="font-hud hidden text-[10px] tracking-[0.22em] text-cyan-300/70 sm:block">
-          同頁投影 · 不另開分頁
-        </p>
-        <button
-          type="button"
-          onClick={() => onOpenTab(app)}
-          className="border border-cyan-400/40 px-3 py-1.5 text-sm text-cyan-100 hover:bg-cyan-400/10"
-        >
-          外部開啟
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-3 py-1.5 text-sm text-cyan-200 hover:text-white"
-        >
-          關閉
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenTab(app)}
+            className="border border-cyan-400/40 px-3 py-1.5 text-sm text-cyan-100 hover:bg-cyan-400/10"
+          >
+            外部開啟
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-sm text-cyan-200 hover:text-white"
+          >
+            關閉
+          </button>
+        </div>
       </header>
 
       <div className="border-b border-amber-300/25 bg-amber-300/8 px-3 py-2 text-xs leading-relaxed text-amber-100/90 md:text-sm">

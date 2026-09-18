@@ -182,7 +182,7 @@ export default function App() {
   const embedOpen = Boolean(embedApp);
 
   return (
-    <div ref={rootRef} className="hud-root flex min-h-dvh flex-col">
+    <div ref={rootRef} className="hud-root flex h-dvh flex-col overflow-hidden">
       <a
         href="#main-stage"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-black focus:px-3 focus:py-2"
@@ -194,7 +194,7 @@ export default function App() {
 
       {booting && <BootSequence reducedMotion={reducedMotion} onDone={finishBoot} />}
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
         <TopBar
           clock={clock}
           date={date}
@@ -207,7 +207,7 @@ export default function App() {
         <div ref={workspaceRef} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
           {isXl && (
             <>
-              <div className="shrink-0" style={{ width: layout.railWidth }}>
+              <div className="flex h-full min-h-0 shrink-0" style={{ width: layout.railWidth }}>
                 <SideRail
                   apps={apps}
                   logs={logs}
@@ -230,7 +230,7 @@ export default function App() {
           <main
             ref={mainRef}
             id="main-stage"
-            className={`flex min-h-0 min-w-0 flex-1 ${embedOpen && !isWide ? "flex-col" : ""}`}
+            className={`flex min-h-0 min-w-0 flex-1 overflow-hidden ${embedOpen && !isWide ? "flex-col" : ""}`}
           >
             <div
               className="min-h-0 min-w-0 overflow-auto"

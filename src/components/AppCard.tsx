@@ -58,7 +58,7 @@ export function AppCard({
       className={cn(
         "holo-card panel group flex flex-col gap-3 p-4",
         !app.enabled && "opacity-55",
-        compact ? "min-h-[168px]" : "min-h-[210px]",
+        compact ? "min-h-[152px]" : "min-h-[196px]",
         active && "holo-card-active",
       )}
     >

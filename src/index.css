@@ -57,7 +57,7 @@ select {
   --hud-px: 0;
   --hud-py: 0;
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
   isolation: isolate;
   overflow: hidden;
   background:
@@ -238,8 +238,8 @@ select {
 .hud-orbit {
   transform-style: preserve-3d;
   transform:
-    rotateX(calc(8deg + var(--hud-py) * 6deg))
-    rotateY(calc(var(--hud-px) * -8deg));
+    rotateX(calc(4deg + var(--hud-py) * 3deg))
+    rotateY(calc(var(--hud-px) * -5deg));
   will-change: transform;
 }
 

@@ -30,22 +30,22 @@ export function LauncherStage({
     return visible.map((app, index) => {
       const angle = -90 + (360 / Math.max(visible.length, 1)) * index;
       const rad = (angle * Math.PI) / 180;
-      const radius = 40;
+      const radius = 36;
       return {
         app,
         left: `${50 + radius * Math.cos(rad)}%`,
         top: `${50 + radius * Math.sin(rad)}%`,
-        tiltY: Math.cos(rad) * 9,
-        tiltX: Math.sin(rad) * -7,
+        tiltY: Math.cos(rad) * 6,
+        tiltX: Math.sin(rad) * -5,
       };
     });
   }, [visible]);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {useRadial && (
-        <div className="hud-orbit-wrap mx-auto hidden min-h-[700px] w-full max-w-[1020px] xl:block">
-          <div className="hud-orbit relative mx-auto aspect-square w-full max-w-[900px]">
+        <div className="hud-orbit-wrap mx-auto hidden h-full min-h-0 w-full max-w-[980px] xl:flex xl:items-center xl:justify-center">
+          <div className="hud-orbit relative aspect-square w-full max-w-[min(100%,720px)]">
             <div className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <ArcReactor size={196} />
               <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
@@ -53,7 +53,7 @@ export function LauncherStage({
             {radial.map(({ app, left, top, tiltX, tiltY }) => (
               <div
                 key={app.id}
-                className="absolute z-10 w-[258px] -translate-x-1/2 -translate-y-1/2"
+                className="absolute z-10 w-[236px] -translate-x-1/2 -translate-y-1/2"
                 style={{
                   left,
                   top,
