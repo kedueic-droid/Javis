@@ -1,3 +1,4 @@
+import { useCallback, useRef, type PointerEvent } from "react";
 import { cn } from "../lib/cn";
 import { deriveStatus, statusLabel } from "../lib/time";
 import type { AppModule } from "../types";
@@ -6,24 +7,63 @@ import { AppIcon } from "./icons";
 interface AppCardProps {
   app: AppModule;
   compact?: boolean;
+  active?: boolean;
+  reducedMotion?: boolean;
   onLaunch: (app: AppModule) => void;
-  onEmbed: (app: AppModule) => void;
+  onOpenExternal: (app: AppModule) => void;
   onConfigure: (app: AppModule) => void;
 }
 
-export function AppCard({ app, compact, onLaunch, onEmbed, onConfigure }: AppCardProps) {
+export function AppCard({
+  app,
+  compact,
+  active,
+  reducedMotion,
+  onLaunch,
+  onOpenExternal,
+  onConfigure,
+}: AppCardProps) {
   const status = deriveStatus(app.url, app.enabled);
   const canLaunch = Boolean(app.url.trim()) && app.enabled;
+  const cardRef = useRef<HTMLElement>(null);
+
+  const onPointerMove = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      if (reducedMotion) return;
+      const el = cardRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      const rx = (0.5 - y) * 10;
+      const ry = (x - 0.5) * 12;
+      el.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+      el.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+      el.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateZ(14px)`;
+    },
+    [reducedMotion],
+  );
+
+  const resetTilt = useCallback(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.transform = "rotateX(0deg) rotateY(0deg) translateZ(0)";
+  }, []);
 
   return (
     <article
+      ref={cardRef}
+      onPointerMove={onPointerMove}
+      onPointerLeave={resetTilt}
       className={cn(
-        "panel group flex flex-col gap-3 p-4 transition",
+        "holo-card panel group flex flex-col gap-3 p-4",
         !app.enabled && "opacity-55",
-        compact ? "min-h-[196px]" : "min-h-[210px]",
+        compact ? "min-h-[168px]" : "min-h-[210px]",
+        active && "holo-card-active",
       )}
     >
-      <div className="flex items-start gap-3">
+      <span className="card-shine" aria-hidden="true" />
+      <div className="relative flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
           <AppIcon name={app.icon} className="h-5 w-5" />
         </span>
@@ -38,13 +78,13 @@ export function AppCard({ app, compact, onLaunch, onEmbed, onConfigure }: AppCar
         </div>
       </div>
 
-      <p className="line-clamp-2 text-sm leading-relaxed text-cyan-100/75 [word-break:keep-all]">
+      <p className="relative line-clamp-2 text-sm leading-relaxed text-cyan-100/75 [word-break:keep-all]">
         {app.description}
       </p>
 
-      <p className="font-hud mt-auto text-[10px] tracking-[0.16em] text-blue-200/80">{app.stack}</p>
+      <p className="font-hud relative mt-auto text-[10px] tracking-[0.16em] text-blue-200/80">{app.stack}</p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="relative flex flex-wrap gap-2">
         <button
           type="button"
           disabled={!canLaunch}
@@ -56,10 +96,10 @@ export function AppCard({ app, compact, onLaunch, onEmbed, onConfigure }: AppCar
         <button
           type="button"
           disabled={!canLaunch}
-          onClick={() => onEmbed(app)}
+          onClick={() => onOpenExternal(app)}
           className="border border-cyan-400/30 px-3 py-1.5 text-sm text-cyan-100 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          內嵌
+          外部開啟
         </button>
         <button
           type="button"

@@ -1,33 +1,34 @@
-export function HudDecor({ reducedMotion }: { reducedMotion: boolean }) {
-  const particles = reducedMotion
-    ? []
-    : [8, 18, 27, 36, 44, 53, 61, 72, 81, 89].map((left, i) => ({
-        left,
-        delay: i * 1.1,
-        duration: 10 + (i % 5) * 1.4,
-      }));
+import { HudCanvas } from "./HudCanvas";
 
+export function HudDecor({ reducedMotion }: { reducedMotion: boolean }) {
   return (
-    <>
-      <div className="hud-grid" />
-      <div className="hud-circuit" />
+    <div className="hud-scene" aria-hidden="true">
+      <div className="hud-layer-far">
+        <div className="hud-grid" />
+        <div className="hud-circuit" />
+      </div>
+      <div className="hud-layer-floor" />
+      <div className="hud-layer-mid">
+        <HoloRings reducedMotion={reducedMotion} />
+      </div>
+      <HudCanvas reducedMotion={reducedMotion} />
       <div className="hud-vignette" />
       <div className="scanlines" />
       {!reducedMotion && <div className="scan-sweep" />}
-      <div className="particles" aria-hidden="true">
-        {particles.map((p) => (
-          <span
-            key={p.left}
-            className="particle"
-            style={{
-              left: `${p.left}%`,
-              animationDelay: `${p.delay}s`,
-              animationDuration: `${p.duration}s`,
-            }}
-          />
-        ))}
-      </div>
-    </>
+      <div className="hud-pointer-glow" />
+    </div>
+  );
+}
+
+function HoloRings({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <div className="holo-field">
+      <span className={`holo-ring holo-ring-a ${reducedMotion ? "" : "arc-spin"}`} />
+      <span className={`holo-ring holo-ring-b ${reducedMotion ? "" : "arc-spin-rev"}`} />
+      <span className={`holo-ring holo-ring-c ${reducedMotion ? "" : "arc-spin"}`} />
+      <span className="holo-core" />
+      <span className="holo-ellipse" />
+    </div>
   );
 }
 
@@ -48,17 +49,37 @@ export function ArcReactor({ size = 180 }: { size?: number }) {
       width={size}
       height={size}
       viewBox="0 0 200 200"
-      className="pulse-core"
+      className="pulse-core drop-shadow-[0_0_24px_rgba(0,229,255,0.45)]"
       aria-hidden="true"
     >
       <defs>
         <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#b8fbff" />
-          <stop offset="45%" stopColor="#00e5ff" />
+          <stop offset="0%" stopColor="#e7ffff" />
+          <stop offset="38%" stopColor="#7af6ff" />
+          <stop offset="72%" stopColor="#00e5ff" />
           <stop offset="100%" stopColor="#00384a" />
         </radialGradient>
+        <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
-      <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="1" />
+      <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(0,229,255,0.12)" strokeWidth="1" />
+      <g className="arc-spin origin-center" style={{ transformOrigin: "100px 100px" }}>
+        <circle
+          cx="100"
+          cy="100"
+          r="86"
+          fill="none"
+          stroke="#00e5ff"
+          strokeWidth="1.1"
+          strokeDasharray="4 10 22 8"
+          opacity="0.55"
+        />
+      </g>
       <g className="arc-spin origin-center" style={{ transformOrigin: "100px 100px" }}>
         <circle
           cx="100"
@@ -68,7 +89,8 @@ export function ArcReactor({ size = 180 }: { size?: number }) {
           stroke="#00e5ff"
           strokeWidth="1.4"
           strokeDasharray="18 10 4 12"
-          opacity="0.7"
+          opacity="0.75"
+          filter="url(#softGlow)"
         />
       </g>
       <g className="arc-spin-rev origin-center" style={{ transformOrigin: "100px 100px" }}>
@@ -80,23 +102,30 @@ export function ArcReactor({ size = 180 }: { size?: number }) {
           stroke="#3d9eff"
           strokeWidth="1.2"
           strokeDasharray="8 14"
-          opacity="0.8"
+          opacity="0.85"
         />
       </g>
-      <circle cx="100" cy="100" r="38" fill="none" stroke="rgba(0,229,255,0.55)" strokeWidth="2" />
-      <circle cx="100" cy="100" r="22" fill="url(#coreGlow)" />
+      <polygon
+        points="100,48 128,64 128,96 100,112 72,96 72,64"
+        fill="none"
+        stroke="rgba(0,229,255,0.35)"
+        strokeWidth="0.8"
+        opacity="0.9"
+      />
+      <circle cx="100" cy="100" r="38" fill="none" stroke="rgba(0,229,255,0.6)" strokeWidth="2" />
+      <circle cx="100" cy="100" r="24" fill="url(#coreGlow)" />
       <circle cx="100" cy="100" r="8" fill="#041018" />
-      {[0, 60, 120, 180, 240, 300].map((deg) => (
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
         <line
           key={deg}
           x1="100"
-          y1="48"
+          y1={deg % 90 === 0 ? 44 : 50}
           x2="100"
-          y2="58"
+          y2={deg % 90 === 0 ? 56 : 58}
           stroke="#00e5ff"
-          strokeWidth="1.4"
+          strokeWidth={deg % 90 === 0 ? 1.6 : 1.1}
           transform={`rotate(${deg} 100 100)`}
-          opacity="0.8"
+          opacity="0.85"
         />
       ))}
     </svg>

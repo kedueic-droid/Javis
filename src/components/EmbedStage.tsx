@@ -2,44 +2,60 @@ import type { AppModule } from "../types";
 
 interface EmbedStageProps {
   app: AppModule;
+  shieldPointer?: boolean;
   onClose: () => void;
   onOpenTab: (app: AppModule) => void;
 }
 
-export function EmbedStage({ app, onClose, onOpenTab }: EmbedStageProps) {
+export function EmbedStage({ app, shieldPointer, onClose, onOpenTab }: EmbedStageProps) {
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-[#02060c]/95 p-3 md:p-5" role="dialog" aria-label={`${app.name} 內嵌檢視`}>
-      <div className="panel mb-3 flex flex-wrap items-center gap-3 px-4 py-3">
+    <section
+      className="embed-stage panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+      aria-label={`${app.name} 內嵌舞台`}
+    >
+      <header className="flex flex-wrap items-center gap-3 border-b border-cyan-400/20 px-3 py-2.5 md:px-4">
         <div className="min-w-0 flex-1">
-          <p className="font-hud text-[10px] tracking-[0.3em] text-cyan-400/80">EMBEDDED VIEW</p>
+          <p className="font-hud text-[10px] tracking-[0.3em] text-cyan-400/80">EMBEDDED STAGE</p>
           <h2 className="truncate text-base text-cyan-50">{app.name}</h2>
         </div>
+        <p className="font-hud hidden text-[10px] tracking-[0.22em] text-cyan-300/70 sm:block">
+          同頁投影 · 不另開分頁
+        </p>
         <button
           type="button"
           onClick={() => onOpenTab(app)}
-          className="border border-cyan-400/40 px-3 py-1.5 text-sm text-cyan-100"
+          className="border border-cyan-400/40 px-3 py-1.5 text-sm text-cyan-100 hover:bg-cyan-400/10"
         >
-          改以新分頁開啟
+          外部開啟
         </button>
-        <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm text-cyan-200">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-3 py-1.5 text-sm text-cyan-200 hover:text-white"
+        >
           關閉
         </button>
+      </header>
+
+      <div className="border-b border-amber-300/25 bg-amber-300/8 px-3 py-2 text-xs leading-relaxed text-amber-100/90 md:text-sm">
+        部分應用（尤其是本機開發伺服器或設有 X-Frame-Options 的站台）會阻擋 iframe 嵌入。若畫面空白，請按「外部開啟」；系統不會自動另開分頁。
       </div>
-      <div className="mb-3 border border-amber-300/30 bg-amber-300/8 px-4 py-2 text-sm text-amber-100/90">
-        部分應用（尤其是本機開發伺服器或設有 X-Frame-Options 的站台）會阻擋 iframe 嵌入。若畫面空白，請改以新分頁開啟。
-      </div>
-      <div className="panel min-h-0 flex-1 overflow-hidden">
+
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-black/70">
         {app.url ? (
           <iframe
             title={app.name}
             src={app.url}
-            className="h-full min-h-[60vh] w-full bg-black"
+            className="h-full w-full bg-black"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           />
         ) : (
           <p className="p-8 text-center text-cyan-200/70">尚未設定目標網址。</p>
         )}
+        {shieldPointer && (
+          <div className="absolute inset-0 z-10 cursor-col-resize bg-transparent" aria-hidden="true" />
+        )}
       </div>
-    </div>
+    </section>
   );
 }

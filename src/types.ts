@@ -43,4 +43,4 @@ export interface ToastMessage {
   tone: "info" | "ok" | "warn";
 }
 
-export type Overlay = "none" | "settings" | "palette" | "embed";
+export type Overlay = "none" | "settings" | "palette";
