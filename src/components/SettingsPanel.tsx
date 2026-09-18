@@ -53,7 +53,7 @@ export function SettingsPanel({
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/55" role="dialog" aria-label="系統設定">
       <button type="button" className="h-full flex-1 cursor-default" aria-label="關閉設定" onClick={onClose} />
-      <aside className="panel flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-cyan-400/30">
+      <aside className="panel flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-cyan-400/30 bg-[#041018]/96">
         <header className="flex items-center justify-between border-b border-cyan-400/20 px-5 py-4">
           <div>
             <p className="font-hud text-[10px] tracking-[0.35em] text-cyan-400/80">CONFIGURATION</p>

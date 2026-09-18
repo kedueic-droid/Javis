@@ -14,11 +14,12 @@ export function LauncherStage({ apps, onLaunch, onEmbed, onConfigure }: Launcher
   const visible = apps.filter((app) => app.enabled);
   const hiddenCount = apps.length - visible.length;
 
+  const useRadial = visible.length > 0 && visible.length <= 5;
   const radial = useMemo(() => {
     return visible.map((app, index) => {
       const angle = -90 + (360 / Math.max(visible.length, 1)) * index;
       const rad = (angle * Math.PI) / 180;
-      const radius = 38;
+      const radius = 40;
       return {
         app,
         left: `${50 + radius * Math.cos(rad)}%`,
@@ -29,31 +30,33 @@ export function LauncherStage({ apps, onLaunch, onEmbed, onConfigure }: Launcher
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="mx-auto hidden min-h-[680px] w-full max-w-[980px] xl:block">
-        <div className="relative mx-auto aspect-square w-full max-w-[860px]">
-          <div className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-            <ArcReactor size={196} />
-            <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
-          </div>
-          {radial.map(({ app, left, top }) => (
-            <div
-              key={app.id}
-              className="absolute z-10 w-[250px] -translate-x-1/2 -translate-y-1/2"
-              style={{ left, top }}
-            >
-              <AppCard
-                app={app}
-                compact
-                onLaunch={onLaunch}
-                onEmbed={onEmbed}
-                onConfigure={onConfigure}
-              />
+      {useRadial && (
+        <div className="mx-auto hidden min-h-[700px] w-full max-w-[1020px] xl:block">
+          <div className="relative mx-auto aspect-square w-full max-w-[900px]">
+            <div className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+              <ArcReactor size={196} />
+              <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
             </div>
-          ))}
+            {radial.map(({ app, left, top }) => (
+              <div
+                key={app.id}
+                className="absolute z-10 w-[258px] -translate-x-1/2 -translate-y-1/2"
+                style={{ left, top }}
+              >
+                <AppCard
+                  app={app}
+                  compact
+                  onLaunch={onLaunch}
+                  onEmbed={onEmbed}
+                  onConfigure={onConfigure}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-3 px-3 pb-4 md:grid-cols-2 xl:hidden">
+      <div className={useRadial ? "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:hidden" : "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:grid-cols-3"}>
         {visible.map((app) => (
           <AppCard
             key={app.id}

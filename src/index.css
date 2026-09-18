@@ -269,6 +269,12 @@ select {
   border-radius: 2px;
 }
 
+input[type="checkbox"] {
+  accent-color: #00e5ff;
+  width: 1rem;
+  height: 1rem;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: rgba(150, 210, 230, 0.45);

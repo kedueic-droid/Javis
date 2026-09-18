@@ -81,9 +81,9 @@ export function CommandPalette({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/55 px-4 pt-[12vh]" role="dialog" aria-label="指令監視台">
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/72 px-4 pt-[12vh]" role="dialog" aria-label="指令監視台">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="關閉" onClick={onClose} />
-      <div className="panel relative z-10 w-full max-w-xl overflow-hidden">
+      <div className="panel relative z-10 w-full max-w-xl overflow-hidden bg-[#041018]/95">
         <div className="flex items-center gap-3 border-b border-cyan-400/20 px-4 py-3">
           <span className="font-hud text-[10px] tracking-[0.3em] text-cyan-400/80">COMMAND</span>
           <input

@@ -20,23 +20,27 @@ export function AppCard({ app, compact, onLaunch, onEmbed, onConfigure }: AppCar
       className={cn(
         "panel group flex flex-col gap-3 p-4 transition",
         !app.enabled && "opacity-55",
-        compact ? "min-h-[188px]" : "min-h-[210px]",
+        compact ? "min-h-[196px]" : "min-h-[210px]",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
-            <AppIcon name={app.icon} className="h-5 w-5" />
-          </span>
-          <div>
-            <h3 className="text-[15px] font-semibold text-cyan-50">{app.name}</h3>
-            <p className="font-mono text-[10px] tracking-wider text-cyan-300/60">{app.repoHint}</p>
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-cyan-400/40 bg-cyan-400/10 text-cyan-200">
+          <AppIcon name={app.icon} className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-[15px] leading-snug font-semibold text-cyan-50 [word-break:keep-all]">
+              {app.name}
+            </h3>
+            <StatusBadge status={status} />
           </div>
+          <p className="font-mono mt-0.5 text-[10px] tracking-wider text-cyan-300/60">{app.repoHint}</p>
         </div>
-        <StatusBadge status={status} />
       </div>
 
-      <p className="line-clamp-2 text-sm leading-relaxed text-cyan-100/75">{app.description}</p>
+      <p className="line-clamp-2 text-sm leading-relaxed text-cyan-100/75 [word-break:keep-all]">
+        {app.description}
+      </p>
 
       <p className="font-hud mt-auto text-[10px] tracking-[0.16em] text-blue-200/80">{app.stack}</p>
 
@@ -80,7 +84,7 @@ function StatusBadge({ status }: { status: ReturnType<typeof deriveStatus> }) {
           : "text-emerald-300";
 
   return (
-    <span className={cn("flex items-center gap-1.5 font-hud text-[10px] tracking-[0.18em]", color)}>
+    <span className={cn("flex shrink-0 items-center gap-1.5 font-hud text-[10px] tracking-[0.18em] whitespace-nowrap", color)}>
       <span className="status-dot bg-current" />
       {statusLabel(status)}
     </span>

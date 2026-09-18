@@ -30,9 +30,9 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="hidden min-w-0 flex-1 lg:block">
-        <p className="text-sm text-cyan-100">{greetingTitle}</p>
-        <p className="truncate text-xs text-cyan-200/60">{greetingLine}</p>
+      <div className="hidden min-w-0 flex-1 px-4 lg:block">
+        <p className="text-sm text-cyan-50">{greetingTitle}</p>
+        <p className="text-xs leading-relaxed text-cyan-200/70 [word-break:keep-all]">{greetingLine}</p>
       </div>
 
       <div className="ml-auto flex items-center gap-3">
