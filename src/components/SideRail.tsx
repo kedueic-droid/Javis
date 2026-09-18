@@ -43,7 +43,7 @@ export function SideRail({ apps, logs, activeId, onSelect, onOpenSettings }: Sid
 
       <section className="panel flex min-h-0 flex-1 flex-col p-3">
         <p className="font-hud mb-2 text-[10px] tracking-[0.3em] text-cyan-400/70">SYS LOG</p>
-        <ul className="space-y-1.5 overflow-auto font-mono text-[11px] text-cyan-200/70">
+        <ul data-scroll className="space-y-1.5 overflow-auto font-mono text-[11px] text-cyan-200/70">
           {logs.slice(0, 12).map((line, i) => (
             <li key={`${i}-${line}`}>{line}</li>
           ))}

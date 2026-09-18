@@ -40,7 +40,7 @@ export function EmbedStage({ app, shieldPointer, onClose, onOpenTab }: EmbedStag
         部分應用（尤其是本機開發伺服器或設有 X-Frame-Options 的站台）會阻擋 iframe 嵌入。若畫面空白，請按「外部開啟」；系統不會自動另開分頁。
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-black/70">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-black/70" data-no-scene-drag>
         {app.url ? (
           <iframe
             title={app.name}

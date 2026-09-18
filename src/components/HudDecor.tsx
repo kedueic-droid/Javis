@@ -3,6 +3,7 @@ import { HudCanvas } from "./HudCanvas";
 export function HudDecor({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <div className="hud-scene" aria-hidden="true">
+      <div className="hud-wordmark-ghost">J.A.R.V.I.S.</div>
       <div className="hud-layer-far">
         <div className="hud-grid" />
         <div className="hud-circuit" />
@@ -12,6 +13,13 @@ export function HudDecor({ reducedMotion }: { reducedMotion: boolean }) {
         <HoloRings reducedMotion={reducedMotion} />
       </div>
       <HudCanvas reducedMotion={reducedMotion} />
+    </div>
+  );
+}
+
+export function HudPostFx({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <div className="hud-postfx" aria-hidden="true">
       <div className="hud-vignette" />
       <div className="scanlines" />
       {!reducedMotion && <div className="scan-sweep" />}
@@ -34,7 +42,7 @@ function HoloRings({ reducedMotion }: { reducedMotion: boolean }) {
 
 export function CornerMarks() {
   return (
-    <div className="pointer-events-none absolute inset-3 z-20 md:inset-4" aria-hidden="true">
+    <div className="hud-obj hud-obj-corners pointer-events-none absolute inset-3 z-20 md:inset-4" aria-hidden="true">
       <span className="absolute top-0 left-0 h-8 w-8 border-t-2 border-l-2 border-cyan-300/70" />
       <span className="absolute top-0 right-0 h-8 w-8 border-t-2 border-r-2 border-cyan-300/70" />
       <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-cyan-300/70" />

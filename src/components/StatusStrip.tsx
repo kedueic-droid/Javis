@@ -30,6 +30,9 @@ export function StatusStrip({ apps, clock }: { apps: AppModule[]; clock: string 
           </div>
         ))}
       </div>
+      <p className="mt-1 px-1 text-center font-mono text-[10px] leading-relaxed text-cyan-300/45">
+        拖曳空白 HUD、卡片外框或「操控場景」可旋轉立體介面；內嵌畫面與分隔線不會被帶走
+      </p>
       <p className="sr-only">
         建議埠位：
         {SUGGESTED_PORTS.map((p) => `${p.name} ${p.port}`).join("、")}

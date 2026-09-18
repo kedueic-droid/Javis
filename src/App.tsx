@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette } from "./components/CommandPalette";
 import { EmbedStage } from "./components/EmbedStage";
-import { CornerMarks, HudDecor } from "./components/HudDecor";
+import { CornerMarks, HudDecor, HudPostFx } from "./components/HudDecor";
 import { LauncherStage } from "./components/LauncherStage";
 import { ResizeHandle } from "./components/ResizeHandle";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -14,7 +14,7 @@ import { useApps } from "./hooks/useApps";
 import { useClock } from "./hooks/useClock";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useHudLayout } from "./hooks/useHudLayout";
-import { useHudPointer } from "./hooks/useHudPointer";
+import { useHudScene } from "./hooks/useHudScene";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useReducedMotion } from "./hooks/useReducedMotion";
 import { playBootChime, playConfirmBlip } from "./lib/audio";
@@ -41,9 +41,10 @@ export default function App() {
   const isWide = useMediaQuery("(min-width: 1024px)");
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  useHudPointer(rootRef, reducedMotion);
+  useHudScene(rootRef, stageRef, reducedMotion);
 
   const [booting, setBooting] = useState(() => !settings.skipBoot && !reducedMotion);
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -189,103 +190,113 @@ export default function App() {
       >
         跳到主畫面
       </a>
-      <HudDecor reducedMotion={reducedMotion} />
-      <CornerMarks />
 
       {booting && <BootSequence reducedMotion={reducedMotion} onDone={finishBoot} />}
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
-        <TopBar
-          clock={clock}
-          date={date}
-          greetingTitle={greeting.title}
-          greetingLine={greeting.line}
-          onOpenPalette={() => setOverlay("palette")}
-          onOpenSettings={() => setOverlay("settings")}
-        />
+      <div ref={stageRef} className="hud-stage min-h-0 flex-1">
+        <div className="hud-world">
+          <HudDecor reducedMotion={reducedMotion} />
+          <CornerMarks />
 
-        <div ref={workspaceRef} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-          {isXl && (
-            <>
-              <div className="flex min-h-0 shrink-0 self-stretch" style={{ width: layout.railWidth }}>
-                <SideRail
-                  apps={apps}
-                  logs={logs}
-                  activeId={embedApp?.id}
-                  onSelect={handleLaunch}
-                  onOpenSettings={() => setOverlay("settings")}
-                />
-              </div>
-              <ResizeHandle
-                orientation="vertical"
-                label="拖曳調整模組欄寬度"
-                onDragStart={() => setDragging(true)}
-                onDragEnd={() => setDragging(false)}
-                onDrag={(x) => resizeRail(x)}
-                onNudge={nudgeRail}
-              />
-            </>
-          )}
-
-          <main
-            ref={mainRef}
-            id="main-stage"
-            className={`flex min-h-0 min-w-0 flex-1 overflow-hidden ${embedOpen && !isWide ? "flex-col" : ""}`}
-          >
-            <div
-              className="min-h-0 min-w-0 overflow-auto"
-              style={
-                embedOpen
-                  ? {
-                      flex: `${1 - layout.embedRatio} 1 ${
-                        isWide ? LAYOUT_LIMITS.launcherMinPx : LAYOUT_LIMITS.launcherMinPxY
-                      }px`,
-                    }
-                  : { flex: "1 1 auto" }
-              }
-            >
-              <LauncherStage
-                apps={apps}
-                dense={embedOpen}
-                activeId={embedApp?.id}
-                reducedMotion={reducedMotion}
-                onLaunch={handleLaunch}
-                onOpenExternal={openTab}
-                onConfigure={() => setOverlay("settings")}
+          <div className="hud-ui relative z-10 flex h-full min-h-0 flex-col">
+            <div className="hud-obj hud-obj-top shrink-0">
+              <TopBar
+                clock={clock}
+                date={date}
+                greetingTitle={greeting.title}
+                greetingLine={greeting.line}
+                onOpenPalette={() => setOverlay("palette")}
+                onOpenSettings={() => setOverlay("settings")}
               />
             </div>
 
-            {embedApp && (
-              <>
-                <ResizeHandle
-                  orientation={isWide ? "vertical" : "horizontal"}
-                  label={isWide ? "拖曳調整內嵌舞台寬度" : "拖曳調整內嵌舞台高度"}
-                  onDragStart={() => setDragging(true)}
-                  onDragEnd={() => setDragging(false)}
-                  onDrag={resizeEmbed}
-                  onNudge={nudgeEmbed}
-                />
+            <div ref={workspaceRef} className="hud-workspace flex min-h-0 min-w-0 flex-1">
+              {isXl && (
+                <>
+                  <div className="hud-obj hud-obj-rail flex min-h-0 shrink-0 self-stretch" style={{ width: layout.railWidth }}>
+                    <SideRail
+                      apps={apps}
+                      logs={logs}
+                      activeId={embedApp?.id}
+                      onSelect={handleLaunch}
+                      onOpenSettings={() => setOverlay("settings")}
+                    />
+                  </div>
+                  <ResizeHandle
+                    orientation="vertical"
+                    label="拖曳調整模組欄寬度"
+                    onDragStart={() => setDragging(true)}
+                    onDragEnd={() => setDragging(false)}
+                    onDrag={(x) => resizeRail(x)}
+                    onNudge={nudgeRail}
+                  />
+                </>
+              )}
+
+              <main
+                ref={mainRef}
+                id="main-stage"
+                className={`hud-main flex min-h-0 min-w-0 flex-1 ${embedOpen && !isWide ? "flex-col" : ""}`}
+              >
                 <div
-                  className="flex min-h-0 min-w-0"
-                  style={{
-                    flex: `${layout.embedRatio} 1 ${
-                      isWide ? LAYOUT_LIMITS.embedMinPxX : LAYOUT_LIMITS.embedMinPxY
-                    }px`,
-                  }}
+                  className="hud-obj hud-obj-launcher min-h-0 min-w-0"
+                  style={
+                    embedOpen
+                      ? {
+                          flex: `${1 - layout.embedRatio} 1 ${
+                            isWide ? LAYOUT_LIMITS.launcherMinPx : LAYOUT_LIMITS.launcherMinPxY
+                          }px`,
+                        }
+                      : { flex: "1 1 auto" }
+                  }
                 >
-                  <EmbedStage
-                    app={embedApp}
-                    shieldPointer={dragging}
-                    onClose={closeEmbed}
-                    onOpenTab={openTab}
+                  <LauncherStage
+                    apps={apps}
+                    dense={embedOpen}
+                    activeId={embedApp?.id}
+                    reducedMotion={reducedMotion}
+                    onLaunch={handleLaunch}
+                    onOpenExternal={openTab}
+                    onConfigure={() => setOverlay("settings")}
                   />
                 </div>
-              </>
-            )}
-          </main>
-        </div>
 
-        <StatusStrip apps={apps} clock={clock} />
+                {embedApp && (
+                  <>
+                    <ResizeHandle
+                      orientation={isWide ? "vertical" : "horizontal"}
+                      label={isWide ? "拖曳調整內嵌舞台寬度" : "拖曳調整內嵌舞台高度"}
+                      onDragStart={() => setDragging(true)}
+                      onDragEnd={() => setDragging(false)}
+                      onDrag={resizeEmbed}
+                      onNudge={nudgeEmbed}
+                    />
+                    <div
+                      className="hud-obj hud-obj-embed flex min-h-0 min-w-0"
+                      style={{
+                        flex: `${layout.embedRatio} 1 ${
+                          isWide ? LAYOUT_LIMITS.embedMinPxX : LAYOUT_LIMITS.embedMinPxY
+                        }px`,
+                      }}
+                    >
+                      <EmbedStage
+                        app={embedApp}
+                        shieldPointer={dragging}
+                        onClose={closeEmbed}
+                        onOpenTab={openTab}
+                      />
+                    </div>
+                  </>
+                )}
+              </main>
+            </div>
+
+            <div className="hud-obj hud-obj-status shrink-0">
+              <StatusStrip apps={apps} clock={clock} />
+            </div>
+          </div>
+        </div>
+        <HudPostFx reducedMotion={reducedMotion} />
       </div>
 
       {overlay === "settings" && (

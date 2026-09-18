@@ -1,3 +1,5 @@
+import { SceneGrip } from "./SceneGrip";
+
 interface TopBarProps {
   clock: string;
   date: string;
@@ -24,11 +26,12 @@ export function TopBar({
             <circle cx="12" cy="12" r="3" fill="currentColor" />
           </svg>
         </span>
-        <div>
-          <p className="font-hud text-[11px] tracking-[0.42em] text-cyan-300">J.A.R.V.I.S.</p>
+        <div className="hud-obj-wordmark">
+          <p className="font-hud glow-text text-[11px] tracking-[0.42em] text-cyan-300">J.A.R.V.I.S.</p>
           <h1 className="text-lg font-semibold text-cyan-50 md:text-xl">鐵人指揮中心</h1>
         </div>
       </div>
+      <SceneGrip />
 
       <div className="hidden min-w-0 flex-1 px-4 lg:block">
         <p className="text-sm text-cyan-50">{greetingTitle}</p>

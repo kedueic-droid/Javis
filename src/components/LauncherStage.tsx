@@ -37,29 +37,32 @@ export function LauncherStage({
         top: `${50 + radius * Math.sin(rad)}%`,
         tiltY: Math.cos(rad) * 6,
         tiltX: Math.sin(rad) * -5,
+        depth: Math.round(Math.sin(rad) * 52 + 8),
       };
     });
   }, [visible]);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-visible">
       {useRadial && (
         <div className="hud-orbit-wrap mx-auto hidden h-full min-h-0 w-full max-w-[980px] xl:flex xl:items-center xl:justify-center">
           <div className="hud-orbit relative aspect-square w-full max-w-[min(100%,720px)]">
             <div className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-              <ArcReactor size={196} />
-              <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
+              <div className="hud-obj-core flex flex-col items-center">
+                <ArcReactor size={196} />
+                <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
+              </div>
             </div>
-            {radial.map(({ app, left, top, tiltX, tiltY }) => (
+            {radial.map(({ app, left, top, tiltX, tiltY, depth }) => (
               <div
                 key={app.id}
-                className="absolute z-10 w-[236px] -translate-x-1/2 -translate-y-1/2"
+                className="hud-card-slot absolute z-10 w-[236px]"
                 style={{
                   left,
                   top,
                   transform: reducedMotion
-                    ? "translate(-50%, -50%)"
-                    : `translate(-50%, -50%) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+                    ? `translate(-50%, -50%) translateZ(${depth}px)`
+                    : `translate(-50%, -50%) translateZ(${depth}px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
                 }}
               >
                 <AppCard
@@ -78,25 +81,31 @@ export function LauncherStage({
       )}
 
       <div
+        data-scroll={dense ? true : undefined}
         className={
           dense
-            ? "grid gap-3 px-3 pb-4"
+            ? "grid gap-3 overflow-auto px-3 pb-4"
             : useRadial
               ? "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:hidden"
-              : "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:grid-cols-3"
+              : "grid gap-3 overflow-auto px-3 pb-4 md:grid-cols-2 xl:grid-cols-3"
         }
       >
-        {visible.map((app) => (
-          <AppCard
+        {visible.map((app, index) => (
+          <div
             key={app.id}
-            app={app}
-            compact={dense}
-            active={activeId === app.id}
-            reducedMotion={reducedMotion}
-            onLaunch={onLaunch}
-            onOpenExternal={onOpenExternal}
-            onConfigure={onConfigure}
-          />
+            className="hud-card-slot"
+            style={{ translate: `0 0 ${(index % 3) * 14 - 10}px` }}
+          >
+            <AppCard
+              app={app}
+              compact={dense}
+              active={activeId === app.id}
+              reducedMotion={reducedMotion}
+              onLaunch={onLaunch}
+              onOpenExternal={onOpenExternal}
+              onConfigure={onConfigure}
+            />
+          </div>
         ))}
       </div>
 

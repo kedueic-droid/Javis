@@ -32,6 +32,7 @@ export function AppCard({
       if (reducedMotion) return;
       const el = cardRef.current;
       if (!el) return;
+      if (el.closest(".hud-root")?.hasAttribute("data-hud-dragging")) return;
       const rect = el.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width;
       const y = (event.clientY - rect.top) / rect.height;
