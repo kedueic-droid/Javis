@@ -12,7 +12,7 @@ interface SideRailProps {
 
 export function SideRail({ apps, logs, activeId, onSelect, onOpenSettings }: SideRailProps) {
   return (
-    <aside className="relative z-10 flex h-full min-h-0 w-full flex-col gap-4 px-3 pb-3">
+    <aside className="relative z-10 flex min-h-0 w-full flex-1 flex-col gap-4 px-3 pb-3">
       <nav className="panel p-3" aria-label="模組清單">
         <p className="font-hud mb-2 px-1 text-[10px] tracking-[0.3em] text-cyan-400/70">MODULES</p>
         <ul className="space-y-1">

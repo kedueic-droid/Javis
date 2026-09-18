@@ -207,7 +207,7 @@ export default function App() {
         <div ref={workspaceRef} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
           {isXl && (
             <>
-              <div className="flex h-full min-h-0 shrink-0" style={{ width: layout.railWidth }}>
+              <div className="flex min-h-0 shrink-0 self-stretch" style={{ width: layout.railWidth }}>
                 <SideRail
                   apps={apps}
                   logs={logs}
