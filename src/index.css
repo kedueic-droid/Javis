@@ -99,7 +99,8 @@ select {
   transform:
     translate3d(var(--hud-pan-x), var(--hud-pan-y), var(--hud-dolly))
     rotateX(calc(var(--hud-pitch) * 1deg))
-    rotateY(calc(var(--hud-yaw) * 1deg));
+    rotateY(calc(var(--hud-yaw) * 1deg))
+    scale3d(0.96, 0.96, 0.96);
   will-change: transform;
   cursor: grab;
 }
@@ -114,35 +115,43 @@ select {
   transform-style: preserve-3d;
 }
 
+.hud-ui {
+  padding: 8px 6px 4px;
+}
+
 .hud-obj-top {
-  translate: 0 0 48px;
-  rotate: x 6deg;
+  translate: 0 0 28px;
+  rotate: x 1.6deg;
 }
 
 .hud-obj-wordmark {
-  translate: 0 0 28px;
+  translate: 0 0 14px;
   transform-style: preserve-3d;
 }
 
 .hud-obj-rail {
-  translate: 0 0 -36px;
-  rotate: y 8deg;
+  translate: 0 0 -52px;
+  rotate: y 6deg;
 }
 
 .hud-obj-launcher {
-  translate: 0 0 12px;
+  translate: 0 0 8px;
 }
 
 .hud-obj-embed {
-  translate: 0 0 72px;
+  translate: 0 0 56px;
 }
 
 .hud-obj-status {
-  translate: 0 0 32px;
-  rotate: x -7deg;
+  translate: 0 0 18px;
+  rotate: x -2.2deg;
 }
 
 .hud-obj-core {
+  translate: 0 0 24px;
+}
+
+.hud-obj-corners {
   translate: 0 0 40px;
 }
 
@@ -332,6 +341,14 @@ select {
 .hud-world button,
 .hud-world a {
   cursor: pointer;
+  position: relative;
+  z-index: 3;
+}
+
+.hud-world [role="separator"] {
+  position: relative;
+  z-index: 4;
+  translate: 0 0 24px;
 }
 
 .hud-world input,

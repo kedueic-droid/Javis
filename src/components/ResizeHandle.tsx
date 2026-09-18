@@ -29,7 +29,7 @@ export function ResizeHandle({
       tabIndex={0}
       className={cn(
         "group relative z-20 shrink-0 touch-none select-none",
-        vertical ? "w-3 cursor-col-resize" : "h-3 cursor-row-resize",
+        vertical ? "w-4 cursor-col-resize" : "h-4 cursor-row-resize",
       )}
       onPointerDown={(event) => {
         event.preventDefault();

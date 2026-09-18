@@ -203,11 +203,9 @@ export function useHudScene(
         startGrab(event);
         return;
       }
-      if (fromGrip) {
-        if (event.pointerType === "touch") event.preventDefault();
-        const grip = event.target instanceof Element ? event.target.closest("[data-scene-grab]") : null;
+      if (fromGrip && event.target instanceof Element) {
+        const grip = event.target.closest("[data-scene-grab]");
         if (grip instanceof HTMLElement) grip.focus({ preventScroll: true });
-        startGrab(event);
       }
     };
 
@@ -263,7 +261,7 @@ export function useHudScene(
       }
 
       if (pointers.size === 0) {
-        if (grabbing && inertiaGain > 0 && mode === "orbit") {
+        if (grabbing && inertiaGain > 0 && mode === "orbit" && Math.hypot(vx, vy) > 1.6) {
           target.yaw -= vx * inertiaGain;
           target.pitch -= vy * inertiaGain;
         }
@@ -285,10 +283,19 @@ export function useHudScene(
       commitTarget();
     };
 
+    const resetPose = () => {
+      copyPose(ZERO_POSE, target);
+      copyPose(ZERO_POSE, current);
+      vx = 0;
+      vy = 0;
+      applyPose(root, current);
+      kick();
+    };
+
     const onDblClick = (event: MouseEvent) => {
       if (!isElement(event.target) || !event.target.closest("[data-scene-grab]")) return;
-      copyPose(ZERO_POSE, target);
-      commitTarget();
+      event.preventDefault();
+      resetPose();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -318,8 +325,9 @@ export function useHudScene(
           break;
         case "0":
         case "Home":
-          copyPose(ZERO_POSE, target);
-          break;
+          resetPose();
+          event.preventDefault();
+          return;
         default:
           return;
       }
