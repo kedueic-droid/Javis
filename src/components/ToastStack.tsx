@@ -9,7 +9,7 @@ export function ToastStack({
   onDismiss: (id: string) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed right-4 bottom-20 z-50 flex w-[min(90vw,22rem)] flex-col gap-2">
+    <div className="pointer-events-none fixed top-20 right-4 z-50 flex w-[min(90vw,22rem)] flex-col gap-2">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
