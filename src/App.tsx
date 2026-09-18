@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette } from "./components/CommandPalette";
 import { EmbedStage } from "./components/EmbedStage";
 import { CornerMarks, HudDecor } from "./components/HudDecor";
 import { LauncherStage } from "./components/LauncherStage";
+import { ResizeHandle } from "./components/ResizeHandle";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SideRail } from "./components/SideRail";
 import { StatusStrip } from "./components/StatusStrip";
@@ -12,9 +13,13 @@ import { TopBar } from "./components/TopBar";
 import { useApps } from "./hooks/useApps";
 import { useClock } from "./hooks/useClock";
 import { useHotkeys } from "./hooks/useHotkeys";
+import { useHudLayout } from "./hooks/useHudLayout";
+import { useHudPointer } from "./hooks/useHudPointer";
+import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useReducedMotion } from "./hooks/useReducedMotion";
 import { playBootChime, playConfirmBlip } from "./lib/audio";
 import { createId } from "./lib/cn";
+import { clamp, LAYOUT_LIMITS } from "./lib/layout";
 import type { AppModule, Overlay, ToastMessage } from "./types";
 
 export default function App() {
@@ -31,11 +36,20 @@ export default function App() {
     exportJson,
     importJson,
   } = useApps();
+  const { layout, setRailWidth, setEmbedRatio } = useHudLayout();
+  const isXl = useMediaQuery("(min-width: 1280px)");
+  const isWide = useMediaQuery("(min-width: 1024px)");
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  useHudPointer(rootRef, reducedMotion);
 
   const [booting, setBooting] = useState(() => !settings.skipBoot && !reducedMotion);
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [embedApp, setEmbedApp] = useState<AppModule | null>(null);
   const [focusAdd, setFocusAdd] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [logs, setLogs] = useState<string[]>(() => [
     `${clock}  指揮中心初始化`,
@@ -60,10 +74,9 @@ export default function App() {
         return;
       }
       window.open(app.url, "_blank", "noopener,noreferrer");
-      pushLog(`啟動 ${app.name}`);
-      pushToast(`已開啟「${app.name}」`, "ok");
+      pushLog(`外部開啟 ${app.name}`);
+      pushToast(`已於新分頁開啟「${app.name}」`, "ok");
       if (settings.soundEnabled) void playConfirmBlip();
-      setOverlay("none");
     },
     [pushLog, pushToast, settings.soundEnabled],
   );
@@ -76,33 +89,47 @@ export default function App() {
         return;
       }
       setEmbedApp(app);
-      setOverlay("embed");
-      pushLog(`內嵌 ${app.name}`);
+      setOverlay("none");
+      setFocusAdd(false);
+      pushLog(`投影 ${app.name}`);
+      pushToast(`已於指揮中心載入「${app.name}」`, "ok");
+      if (settings.soundEnabled) void playConfirmBlip();
     },
-    [pushLog, pushToast],
+    [pushLog, pushToast, settings.soundEnabled],
   );
 
   const handleLaunch = useCallback(
     (app: AppModule) => {
-      if (settings.openMode === "embed") openEmbed(app);
-      else openTab(app);
+      if (settings.openMode === "tab") openTab(app);
+      else openEmbed(app);
     },
     [openEmbed, openTab, settings.openMode],
   );
 
-  const closeOverlays = useCallback(() => {
+  const closeOverlay = useCallback(() => {
     setOverlay("none");
-    setEmbedApp(null);
     setFocusAdd(false);
   }, []);
+
+  const closeEmbed = useCallback(() => {
+    setEmbedApp(null);
+  }, []);
+
+  const onEscape = useCallback(() => {
+    if (overlay !== "none") {
+      closeOverlay();
+      return;
+    }
+    if (embedApp) closeEmbed();
+  }, [closeEmbed, closeOverlay, embedApp, overlay]);
 
   const hotkeyHandlers = useMemo(
     () => ({
       onPalette: () =>
         setOverlay((cur) => (cur === "palette" ? "none" : "palette")),
-      onEscape: closeOverlays,
+      onEscape,
     }),
-    [closeOverlays],
+    [onEscape],
   );
   useHotkeys(hotkeyHandlers);
 
@@ -112,8 +139,50 @@ export default function App() {
     if (settings.soundEnabled) void playBootChime();
   }, [pushLog, settings.soundEnabled]);
 
+  const resizeRail = useCallback(
+    (clientX: number) => {
+      const rect = workspaceRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setRailWidth(clientX - rect.left);
+    },
+    [setRailWidth],
+  );
+
+  const resizeEmbed = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = mainRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      if (isWide) {
+        const maxPx = rect.width - LAYOUT_LIMITS.launcherMinPx - 12;
+        const embedPx = clamp(rect.right - clientX, LAYOUT_LIMITS.embedMinPxX, Math.max(LAYOUT_LIMITS.embedMinPxX, maxPx));
+        setEmbedRatio(embedPx / rect.width);
+      } else {
+        const maxPx = rect.height - LAYOUT_LIMITS.launcherMinPxY - 12;
+        const embedPx = clamp(rect.bottom - clientY, LAYOUT_LIMITS.embedMinPxY, Math.max(LAYOUT_LIMITS.embedMinPxY, maxPx));
+        setEmbedRatio(embedPx / rect.height);
+      }
+    },
+    [isWide, setEmbedRatio],
+  );
+
+  const nudgeRail = useCallback(
+    (delta: number) => setRailWidth(layout.railWidth + delta),
+    [layout.railWidth, setRailWidth],
+  );
+
+  const nudgeEmbed = useCallback(
+    (delta: number) => {
+      const rect = mainRef.current?.getBoundingClientRect();
+      const span = isWide ? rect?.width ?? 800 : rect?.height ?? 600;
+      setEmbedRatio(layout.embedRatio - delta / span);
+    },
+    [isWide, layout.embedRatio, setEmbedRatio],
+  );
+
+  const embedOpen = Boolean(embedApp);
+
   return (
-    <div className="hud-root flex min-h-dvh flex-col">
+    <div ref={rootRef} className="hud-root flex h-dvh flex-col overflow-hidden">
       <a
         href="#main-stage"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-black focus:px-3 focus:py-2"
@@ -125,33 +194,97 @@ export default function App() {
 
       {booting && <BootSequence reducedMotion={reducedMotion} onDone={finishBoot} />}
 
-      <TopBar
-        clock={clock}
-        date={date}
-        greetingTitle={greeting.title}
-        greetingLine={greeting.line}
-        onOpenPalette={() => setOverlay("palette")}
-        onOpenSettings={() => setOverlay("settings")}
-      />
-
-      <div className="relative z-10 flex min-h-0 flex-1">
-        <SideRail
-          apps={apps}
-          logs={logs}
-          onSelect={handleLaunch}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TopBar
+          clock={clock}
+          date={date}
+          greetingTitle={greeting.title}
+          greetingLine={greeting.line}
+          onOpenPalette={() => setOverlay("palette")}
           onOpenSettings={() => setOverlay("settings")}
         />
-        <main id="main-stage" className="flex min-w-0 flex-1 flex-col">
-          <LauncherStage
-            apps={apps}
-            onLaunch={handleLaunch}
-            onEmbed={openEmbed}
-            onConfigure={() => setOverlay("settings")}
-          />
-        </main>
-      </div>
 
-      <div className="relative z-10">
+        <div ref={workspaceRef} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+          {isXl && (
+            <>
+              <div className="flex min-h-0 shrink-0 self-stretch" style={{ width: layout.railWidth }}>
+                <SideRail
+                  apps={apps}
+                  logs={logs}
+                  activeId={embedApp?.id}
+                  onSelect={handleLaunch}
+                  onOpenSettings={() => setOverlay("settings")}
+                />
+              </div>
+              <ResizeHandle
+                orientation="vertical"
+                label="拖曳調整模組欄寬度"
+                onDragStart={() => setDragging(true)}
+                onDragEnd={() => setDragging(false)}
+                onDrag={(x) => resizeRail(x)}
+                onNudge={nudgeRail}
+              />
+            </>
+          )}
+
+          <main
+            ref={mainRef}
+            id="main-stage"
+            className={`flex min-h-0 min-w-0 flex-1 overflow-hidden ${embedOpen && !isWide ? "flex-col" : ""}`}
+          >
+            <div
+              className="min-h-0 min-w-0 overflow-auto"
+              style={
+                embedOpen
+                  ? {
+                      flex: `${1 - layout.embedRatio} 1 ${
+                        isWide ? LAYOUT_LIMITS.launcherMinPx : LAYOUT_LIMITS.launcherMinPxY
+                      }px`,
+                    }
+                  : { flex: "1 1 auto" }
+              }
+            >
+              <LauncherStage
+                apps={apps}
+                dense={embedOpen}
+                activeId={embedApp?.id}
+                reducedMotion={reducedMotion}
+                onLaunch={handleLaunch}
+                onOpenExternal={openTab}
+                onConfigure={() => setOverlay("settings")}
+              />
+            </div>
+
+            {embedApp && (
+              <>
+                <ResizeHandle
+                  orientation={isWide ? "vertical" : "horizontal"}
+                  label={isWide ? "拖曳調整內嵌舞台寬度" : "拖曳調整內嵌舞台高度"}
+                  onDragStart={() => setDragging(true)}
+                  onDragEnd={() => setDragging(false)}
+                  onDrag={resizeEmbed}
+                  onNudge={nudgeEmbed}
+                />
+                <div
+                  className="flex min-h-0 min-w-0"
+                  style={{
+                    flex: `${layout.embedRatio} 1 ${
+                      isWide ? LAYOUT_LIMITS.embedMinPxX : LAYOUT_LIMITS.embedMinPxY
+                    }px`,
+                  }}
+                >
+                  <EmbedStage
+                    app={embedApp}
+                    shieldPointer={dragging}
+                    onClose={closeEmbed}
+                    onOpenTab={openTab}
+                  />
+                </div>
+              </>
+            )}
+          </main>
+        </div>
+
         <StatusStrip apps={apps} clock={clock} />
       </div>
 
@@ -160,7 +293,7 @@ export default function App() {
           apps={apps}
           settings={settings}
           focusAdd={focusAdd}
-          onClose={closeOverlays}
+          onClose={closeOverlay}
           onUpdate={updateApp}
           onRemove={(id) => {
             removeApp(id);
@@ -194,9 +327,9 @@ export default function App() {
       {overlay === "palette" && (
         <CommandPalette
           apps={apps}
-          onClose={closeOverlays}
+          onClose={closeOverlay}
           onLaunch={handleLaunch}
-          onEmbed={openEmbed}
+          onOpenExternal={openTab}
           onOpenSettings={() => {
             setFocusAdd(false);
             setOverlay("settings");
@@ -206,10 +339,6 @@ export default function App() {
             setOverlay("settings");
           }}
         />
-      )}
-
-      {overlay === "embed" && embedApp && (
-        <EmbedStage app={embedApp} onClose={closeOverlays} onOpenTab={openTab} />
       )}
 
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((t) => t.filter((x) => x.id !== id))} />

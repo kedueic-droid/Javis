@@ -16,7 +16,7 @@ export function TopBar({
   onOpenSettings,
 }: TopBarProps) {
   return (
-    <header className="relative z-10 flex flex-wrap items-center gap-4 px-4 py-4 md:px-6">
+    <header className="relative z-10 flex shrink-0 flex-wrap items-center gap-4 px-4 py-3 md:px-6">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center border border-cyan-400/50 bg-cyan-400/10">
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-cyan-200" aria-hidden="true">

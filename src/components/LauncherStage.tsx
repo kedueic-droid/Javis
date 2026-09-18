@@ -5,49 +5,70 @@ import { ArcReactor } from "./HudDecor";
 
 interface LauncherStageProps {
   apps: AppModule[];
+  dense?: boolean;
+  activeId?: string | null;
+  reducedMotion?: boolean;
   onLaunch: (app: AppModule) => void;
-  onEmbed: (app: AppModule) => void;
+  onOpenExternal: (app: AppModule) => void;
   onConfigure: (app: AppModule) => void;
 }
 
-export function LauncherStage({ apps, onLaunch, onEmbed, onConfigure }: LauncherStageProps) {
+export function LauncherStage({
+  apps,
+  dense,
+  activeId,
+  reducedMotion,
+  onLaunch,
+  onOpenExternal,
+  onConfigure,
+}: LauncherStageProps) {
   const visible = apps.filter((app) => app.enabled);
   const hiddenCount = apps.length - visible.length;
 
-  const useRadial = visible.length > 0 && visible.length <= 5;
+  const useRadial = !dense && visible.length > 0 && visible.length <= 5;
   const radial = useMemo(() => {
     return visible.map((app, index) => {
       const angle = -90 + (360 / Math.max(visible.length, 1)) * index;
       const rad = (angle * Math.PI) / 180;
-      const radius = 40;
+      const radius = 36;
       return {
         app,
         left: `${50 + radius * Math.cos(rad)}%`,
         top: `${50 + radius * Math.sin(rad)}%`,
+        tiltY: Math.cos(rad) * 6,
+        tiltX: Math.sin(rad) * -5,
       };
     });
   }, [visible]);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {useRadial && (
-        <div className="mx-auto hidden min-h-[700px] w-full max-w-[1020px] xl:block">
-          <div className="relative mx-auto aspect-square w-full max-w-[900px]">
+        <div className="hud-orbit-wrap mx-auto hidden h-full min-h-0 w-full max-w-[980px] xl:flex xl:items-center xl:justify-center">
+          <div className="hud-orbit relative aspect-square w-full max-w-[min(100%,720px)]">
             <div className="absolute top-1/2 left-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
               <ArcReactor size={196} />
               <p className="font-hud mt-2 text-[11px] tracking-[0.4em] text-cyan-300/80">MARK · PORTAL</p>
             </div>
-            {radial.map(({ app, left, top }) => (
+            {radial.map(({ app, left, top, tiltX, tiltY }) => (
               <div
                 key={app.id}
-                className="absolute z-10 w-[258px] -translate-x-1/2 -translate-y-1/2"
-                style={{ left, top }}
+                className="absolute z-10 w-[236px] -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  left,
+                  top,
+                  transform: reducedMotion
+                    ? "translate(-50%, -50%)"
+                    : `translate(-50%, -50%) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+                }}
               >
                 <AppCard
                   app={app}
                   compact
+                  active={activeId === app.id}
+                  reducedMotion={reducedMotion}
                   onLaunch={onLaunch}
-                  onEmbed={onEmbed}
+                  onOpenExternal={onOpenExternal}
                   onConfigure={onConfigure}
                 />
               </div>
@@ -56,13 +77,24 @@ export function LauncherStage({ apps, onLaunch, onEmbed, onConfigure }: Launcher
         </div>
       )}
 
-      <div className={useRadial ? "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:hidden" : "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:grid-cols-3"}>
+      <div
+        className={
+          dense
+            ? "grid gap-3 px-3 pb-4"
+            : useRadial
+              ? "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:hidden"
+              : "grid gap-3 px-3 pb-4 md:grid-cols-2 xl:grid-cols-3"
+        }
+      >
         {visible.map((app) => (
           <AppCard
             key={app.id}
             app={app}
+            compact={dense}
+            active={activeId === app.id}
+            reducedMotion={reducedMotion}
             onLaunch={onLaunch}
-            onEmbed={onEmbed}
+            onOpenExternal={onOpenExternal}
             onConfigure={onConfigure}
           />
         ))}

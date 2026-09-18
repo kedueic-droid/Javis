@@ -91,10 +91,13 @@ export function SettingsPanel({
                   onChange={(e) => onSettings({ openMode: e.target.value as PortalSettings["openMode"] })}
                   className="px-2 py-1"
                 >
-                  <option value="tab">新分頁</option>
-                  <option value="embed">內嵌檢視</option>
+                  <option value="embed">內嵌於指揮中心（建議）</option>
+                  <option value="tab">新分頁（次要）</option>
                 </select>
               </label>
+              <p className="text-xs leading-relaxed text-cyan-200/55">
+                「啟動」預設在本畫面內嵌舞台開啟，可用拖曳把手調整大小。「外部開啟」才會另開分頁。
+              </p>
             </div>
           </section>
 

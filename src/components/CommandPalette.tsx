@@ -7,7 +7,7 @@ interface CommandPaletteProps {
   apps: AppModule[];
   onClose: () => void;
   onLaunch: (app: AppModule) => void;
-  onEmbed: (app: AppModule) => void;
+  onOpenExternal: (app: AppModule) => void;
   onOpenSettings: () => void;
   onAddApp: () => void;
 }
@@ -20,7 +20,7 @@ export function CommandPalette({
   apps,
   onClose,
   onLaunch,
-  onEmbed,
+  onOpenExternal,
   onOpenSettings,
   onAddApp,
 }: CommandPaletteProps) {
@@ -139,9 +139,9 @@ export function CommandPalette({
                 <button
                   type="button"
                   className="px-2 text-xs text-cyan-300/80 hover:text-cyan-100"
-                  onClick={() => onEmbed(item.app)}
+                  onClick={() => onOpenExternal(item.app)}
                 >
-                  內嵌
+                  外部開啟
                 </button>
               ) : null}
             </li>

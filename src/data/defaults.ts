@@ -6,7 +6,7 @@ export const STORAGE_VERSION = 2 as const;
 export const DEFAULT_SETTINGS: PortalSettings = {
   skipBoot: false,
   soundEnabled: false,
-  openMode: "tab",
+  openMode: "embed",
 };
 
 export const DEFAULT_APPS: AppModule[] = [

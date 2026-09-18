@@ -54,14 +54,69 @@ select {
 }
 
 .hud-root {
+  --hud-px: 0;
+  --hud-py: 0;
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
   isolation: isolate;
+  overflow: hidden;
   background:
     radial-gradient(ellipse 80% 55% at 50% 42%, rgba(0, 140, 180, 0.16), transparent 58%),
     radial-gradient(ellipse 40% 30% at 12% 88%, rgba(0, 80, 140, 0.12), transparent 70%),
     radial-gradient(ellipse 35% 28% at 90% 10%, rgba(61, 158, 255, 0.1), transparent 70%),
     #02060c;
+}
+
+.hud-scene {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  perspective: 1600px;
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+}
+
+.hud-layer-far {
+  position: absolute;
+  inset: -14%;
+  transform:
+    translate3d(calc(var(--hud-px) * -30px), calc(var(--hud-py) * -18px), -240px)
+    scale(1.16);
+  filter: blur(0.65px);
+  will-change: transform;
+}
+
+.hud-layer-mid {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--hud-px) * -12px), calc(var(--hud-py) * -8px), -90px);
+  will-change: transform;
+}
+
+.hud-layer-floor {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 170%;
+  height: 110%;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.08) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 48% 52% at 50% 18%, #000 10%, transparent 72%);
+  transform:
+    translate3d(calc(-50% + var(--hud-px) * -22px), calc(-18% + var(--hud-py) * 10px), -170px)
+    rotateX(66deg);
+  transform-origin: center top;
+  opacity: 0.7;
+  will-change: transform;
+}
+
+.hud-chrome {
+  transform: translate3d(calc(var(--hud-px) * 4px), calc(var(--hud-py) * 2.5px), 0);
+  will-change: transform;
 }
 
 .hud-grid {
@@ -70,8 +125,8 @@ select {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(0, 229, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 30%, transparent 85%);
 }
@@ -81,7 +136,7 @@ select {
   position: absolute;
   inset: 0;
   z-index: 0;
-  opacity: 0.35;
+  opacity: 0.4;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cpath d='M20 20h70v40h40' fill='none' stroke='%2300e5ff' stroke-opacity='0.18' stroke-width='1'/%3E%3Cpath d='M220 40h-50v80h-40' fill='none' stroke='%233d9eff' stroke-opacity='0.16' stroke-width='1'/%3E%3Ccircle cx='90' cy='60' r='3' fill='%2300e5ff' fill-opacity='0.4'/%3E%3Ccircle cx='170' cy='120' r='3' fill='%2300e5ff' fill-opacity='0.35'/%3E%3C/svg%3E");
 }
 
@@ -91,6 +146,101 @@ select {
   inset: 0;
   z-index: 1;
   box-shadow: inset 0 0 160px 40px rgba(0, 0, 0, 0.72);
+}
+
+.hud-pointer-glow {
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+  width: 46vmax;
+  height: 46vmax;
+  left: calc(50% + var(--hud-px) * 18%);
+  top: calc(46% + var(--hud-py) * 16%);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.16), rgba(61, 158, 255, 0.04) 42%, transparent 68%);
+  mix-blend-mode: screen;
+  will-change: left, top;
+}
+
+.hud-canvas {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: screen;
+}
+
+.holo-field {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: min(72vw, 760px);
+  height: min(72vw, 760px);
+  transform: translate(-50%, -50%) rotateX(12deg);
+  transform-style: preserve-3d;
+}
+
+.holo-ring {
+  position: absolute;
+  inset: 8%;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  box-shadow:
+    0 0 24px rgba(0, 229, 255, 0.08),
+    inset 0 0 24px rgba(0, 229, 255, 0.05);
+}
+
+.holo-ring-a {
+  inset: 4%;
+  border-style: dashed;
+}
+
+.holo-ring-b {
+  inset: 16%;
+  border-color: rgba(61, 158, 255, 0.3);
+}
+
+.holo-ring-c {
+  inset: 28%;
+  border-width: 2px;
+  opacity: 0.7;
+}
+
+.holo-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18%;
+  height: 18%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.2), transparent 70%);
+}
+
+.holo-ellipse {
+  position: absolute;
+  left: 8%;
+  top: 38%;
+  width: 84%;
+  height: 24%;
+  border: 1px solid rgba(0, 229, 255, 0.16);
+  border-radius: 50%;
+  transform: rotateX(68deg);
+}
+
+.hud-orbit-wrap {
+  perspective: 1280px;
+  transform-style: preserve-3d;
+}
+
+.hud-orbit {
+  transform-style: preserve-3d;
+  transform:
+    rotateX(calc(4deg + var(--hud-py) * 3deg))
+    rotateY(calc(var(--hud-px) * -5deg));
+  will-change: transform;
 }
 
 .scanlines {
@@ -198,6 +348,57 @@ select {
   border-width: 0 2px 2px 0;
 }
 
+.holo-card {
+  --gx: 50%;
+  --gy: 0%;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    border-color 0.18s ease-out;
+  will-change: transform;
+}
+
+.holo-card:hover {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow:
+    0 0 36px rgba(0, 229, 255, 0.2),
+    inset 0 0 28px rgba(0, 229, 255, 0.08);
+}
+
+.holo-card-active {
+  border-color: rgba(0, 229, 255, 0.7);
+  box-shadow:
+    0 0 28px rgba(0, 229, 255, 0.22),
+    inset 0 0 18px rgba(0, 229, 255, 0.1);
+}
+
+.card-shine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    180px 120px at var(--gx) var(--gy),
+    rgba(0, 229, 255, 0.22),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  mix-blend-mode: screen;
+}
+
+.holo-card:hover .card-shine {
+  opacity: 1;
+}
+
+.embed-stage {
+  transform: translateZ(18px);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 32px rgba(0, 229, 255, 0.14),
+    inset 0 0 24px rgba(0, 229, 255, 0.05);
+}
+
 .glow-text {
   text-shadow: 0 0 12px rgba(0, 229, 255, 0.55);
 }
@@ -297,5 +498,30 @@ textarea::placeholder {
   .particle,
   .boot-type {
     animation: none !important;
+  }
+
+  .hud-layer-far {
+    transform: translate3d(0, 0, -180px) scale(1.08);
+    filter: blur(0.4px);
+  }
+
+  .hud-layer-mid {
+    transform: translate3d(0, 0, -70px);
+  }
+
+  .hud-layer-floor {
+    transform: translate3d(-50%, -18%, -140px) rotateX(66deg);
+  }
+
+  .hud-orbit,
+  .holo-card,
+  .hud-chrome {
+    transform: none;
+    will-change: auto;
+  }
+
+  .hud-pointer-glow {
+    left: 50%;
+    top: 46%;
   }
 }

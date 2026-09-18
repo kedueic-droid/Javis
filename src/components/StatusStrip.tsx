@@ -16,7 +16,7 @@ export function StatusStrip({ apps, clock }: { apps: AppModule[]; clock: string 
   ];
 
   return (
-    <section className="relative z-10 mx-3 mb-3 md:mx-4" aria-label="系統狀態">
+    <section className="relative z-10 mx-3 mb-3 shrink-0 md:mx-4" aria-label="系統狀態">
       <div className="panel flex flex-wrap items-stretch">
         {cells.map((cell, i) => (
           <div

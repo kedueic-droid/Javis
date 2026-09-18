@@ -1,8 +1,11 @@
 import { DEFAULT_APPS, DEFAULT_SETTINGS, STORAGE_KEY, STORAGE_VERSION } from "../data/defaults";
 import type { AppModule, IconKey, PortalExport, PortalSettings } from "../types";
 
+export const HUD_PREF_REV = 1;
+
 interface StoredState {
   version: number;
+  hudPrefRev?: number;
   apps: AppModule[];
   settings: PortalSettings;
 }
@@ -90,16 +93,18 @@ export function loadState(): { apps: AppModule[]; settings: PortalSettings } {
       };
     }
     const parsed = JSON.parse(raw) as StoredState;
+    const hudPrefRev = typeof parsed.hudPrefRev === "number" ? parsed.hudPrefRev : 0;
+    const storedMode =
+      parsed.settings?.openMode === "embed" || parsed.settings?.openMode === "tab"
+        ? parsed.settings.openMode
+        : DEFAULT_SETTINGS.openMode;
     const settings: PortalSettings = {
       skipBoot: asBoolean(parsed.settings?.skipBoot, DEFAULT_SETTINGS.skipBoot),
       soundEnabled: asBoolean(
         parsed.settings?.soundEnabled,
         DEFAULT_SETTINGS.soundEnabled,
       ),
-      openMode:
-        parsed.settings?.openMode === "embed" || parsed.settings?.openMode === "tab"
-          ? parsed.settings.openMode
-          : DEFAULT_SETTINGS.openMode,
+      openMode: hudPrefRev < HUD_PREF_REV ? "embed" : storedMode,
     };
     const forceDefaultUrls =
       typeof parsed.version !== "number" || parsed.version < STORAGE_VERSION;
@@ -115,6 +120,7 @@ export function loadState(): { apps: AppModule[]; settings: PortalSettings } {
 export function saveState(apps: AppModule[], settings: PortalSettings): void {
   const payload: StoredState = {
     version: STORAGE_VERSION,
+    hudPrefRev: HUD_PREF_REV,
     apps,
     settings,
   };
@@ -151,7 +157,9 @@ export function parseImportPayload(raw: string): {
       DEFAULT_SETTINGS.soundEnabled,
     ),
     openMode:
-      (parsed as PortalExport).settings?.openMode === "embed" ? "embed" : "tab",
+      (parsed as PortalExport).settings?.openMode === "tab"
+        ? "tab"
+        : DEFAULT_SETTINGS.openMode,
   };
   const apps = mergeApps((parsed as PortalExport).apps);
   if (apps.length === 0) throw new Error("匯入資料不含任何應用");
