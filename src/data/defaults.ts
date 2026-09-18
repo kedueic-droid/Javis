@@ -1,7 +1,7 @@
 import type { AppModule, PortalSettings } from "../types";
 
 export const STORAGE_KEY = "jarvis.portal.v1";
-export const STORAGE_VERSION = 1 as const;
+export const STORAGE_VERSION = 2 as const;
 
 export const DEFAULT_SETTINGS: PortalSettings = {
   skipBoot: false,
@@ -16,8 +16,8 @@ export const DEFAULT_APPS: AppModule[] = [
     description:
       "GM、經理與業務專用的業績總覽。支援 Excel 上傳、權限分層與圖表分析。",
     stack: "React · Vite · Tailwind · Firebase",
-    url: "http://localhost:5173",
-    defaultUrl: "http://localhost:5173",
+    url: "https://joyce-health-report-7372d.web.app",
+    defaultUrl: "https://joyce-health-report-7372d.web.app",
     icon: "dashboard",
     enabled: true,
     builtin: true,
@@ -54,8 +54,8 @@ export const DEFAULT_APPS: AppModule[] = [
     description:
       "檢驗報告數位化作業空間。請在設定中填入 Firebase Hosting 網址。",
     stack: "Firebase Hosting · Static",
-    url: "",
-    defaultUrl: "",
+    url: "https://re-report-b2ec1.web.app",
+    defaultUrl: "https://re-report-b2ec1.web.app",
     icon: "lab",
     enabled: true,
     builtin: true,

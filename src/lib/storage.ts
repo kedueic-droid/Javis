@@ -50,7 +50,10 @@ export function normalizeApp(raw: unknown, fallback?: AppModule): AppModule | nu
   };
 }
 
-export function mergeApps(stored: unknown): AppModule[] {
+export function mergeApps(
+  stored: unknown,
+  options: { forceDefaultUrls?: boolean } = {},
+): AppModule[] {
   const list = Array.isArray(stored) ? stored : [];
   const byId = new Map<string, unknown>();
   for (const item of list) {
@@ -62,7 +65,11 @@ export function mergeApps(stored: unknown): AppModule[] {
   const merged = DEFAULT_APPS.map((def) => {
     const existing = byId.get(def.id);
     byId.delete(def.id);
-    return normalizeApp(existing, def) ?? def;
+    const app = normalizeApp(existing, def) ?? def;
+    if (options.forceDefaultUrls && def.builtin) {
+      return { ...app, url: def.url, defaultUrl: def.defaultUrl };
+    }
+    return app;
   });
 
   for (const leftover of byId.values()) {
@@ -94,7 +101,9 @@ export function loadState(): { apps: AppModule[]; settings: PortalSettings } {
           ? parsed.settings.openMode
           : DEFAULT_SETTINGS.openMode,
     };
-    return { apps: mergeApps(parsed.apps), settings };
+    const forceDefaultUrls =
+      typeof parsed.version !== "number" || parsed.version < STORAGE_VERSION;
+    return { apps: mergeApps(parsed.apps, { forceDefaultUrls }), settings };
   } catch {
     return {
       apps: DEFAULT_APPS.map((app) => ({ ...app })),
