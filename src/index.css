@@ -316,11 +316,32 @@ select {
   touch-action: none;
 }
 
-.solar-overlay {
+.solar-hits {
   pointer-events: none;
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 5;
+}
+
+.solar-hit {
+  pointer-events: auto;
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.solar-hit:hover,
+.solar-hit.is-hot {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 229, 255, 0.45),
+    0 0 18px rgba(0, 229, 255, 0.22);
 }
 
 .solar-label-layer {
@@ -507,7 +528,7 @@ select {
   cursor: grabbing;
 }
 
-.hud-world button,
+.hud-world button:not(.solar-hit),
 .hud-world a {
   cursor: pointer;
   position: relative;

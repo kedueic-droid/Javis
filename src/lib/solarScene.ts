@@ -34,6 +34,7 @@ interface PlanetBody {
   spinMesh: THREE.Object3D;
   hit: THREE.Mesh;
   labelEl: HTMLDivElement;
+  hitBtn: HTMLButtonElement;
   orbitLine: THREE.LineLoop;
   look: PlanetLook;
   orbit: PlanetOrbit;
@@ -163,6 +164,10 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   labelRenderer.domElement.style.pointerEvents = "none";
   host.overlay.appendChild(labelRenderer.domElement);
 
+  const hitsRoot = document.createElement("div");
+  hitsRoot.className = "solar-hits";
+  host.overlay.appendChild(hitsRoot);
+
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x02060c, 0.012);
 
@@ -191,6 +196,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   const camRight = new THREE.Vector3();
   const camUp = new THREE.Vector3();
   const spherical = new THREE.Spherical();
+  const ndcHot = new THREE.Vector3();
 
   scene.add(new THREE.AmbientLight(0x5d87a8, 0.42));
   scene.add(new THREE.HemisphereLight(0xb9e9ff, 0x070b12, 0.38));
@@ -287,6 +293,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     for (const p of planets) {
       p.group.removeFromParent();
       p.orbitLine.removeFromParent();
+      p.hitBtn.remove();
       disposeObject(p.group);
       disposeObject(p.orbitLine);
     }
@@ -295,7 +302,10 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     apps.forEach((app, index) => {
       const look = lookForApp(app);
       const orbit = orbitForIndex(index, apps.length);
-      const body = makePlanet(app, look, orbit, () => hooks.onSelect(app.id));
+      const body = makePlanet(app, look, orbit);
+      bindHotspot(body.hitBtn, () => hooks.onSelect(app.id), () => hooks.onHover(app.id), () => hooks.onHover(null));
+      bindHotspot(body.labelEl, () => hooks.onSelect(app.id), () => hooks.onHover(app.id), () => hooks.onHover(null));
+      hitsRoot.appendChild(body.hitBtn);
       planets.push(body);
       planetsRoot.add(body.orbitLine);
       planetsRoot.add(body.group);
@@ -461,6 +471,25 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   const ro = new ResizeObserver(() => resize());
   ro.observe(host.canvas.parentElement ?? host.canvas);
 
+  function layoutHotspots(activeId: string | null) {
+    const w = Math.max(1, host.overlay.clientWidth);
+    const h = Math.max(1, host.overlay.clientHeight);
+    for (const p of planets) {
+      ndcHot.copy(p.group.position).project(camera);
+      const visible = ndcHot.z > -1 && ndcHot.z < 1 && Math.abs(ndcHot.x) < 1.35 && Math.abs(ndcHot.y) < 1.35;
+      p.hitBtn.hidden = !visible;
+      if (!visible) continue;
+      const x = (ndcHot.x * 0.5 + 0.5) * w;
+      const y = (-ndcHot.y * 0.5 + 0.5) * h;
+      const dist = camera.position.distanceTo(p.group.position);
+      const size = THREE.MathUtils.clamp(980 / dist, 48, 108);
+      p.hitBtn.style.width = `${size}px`;
+      p.hitBtn.style.height = `${size}px`;
+      p.hitBtn.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      p.hitBtn.classList.toggle("is-hot", p.id === activeId || p.id === hoveredId);
+    }
+  }
+
   function applyCommand(cmd: SolarCamCmd) {
     if (cmd.type === "reset") {
       focusId = null;
@@ -562,6 +591,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     }
 
     controls.update();
+    layoutHotspots(activeId);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -592,6 +622,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
       renderer.domElement.removeEventListener("pointercancel", onPointerUp);
       renderer.domElement.removeEventListener("dblclick", onDblClick);
       for (const p of planets) {
+        p.hitBtn.remove();
         disposeObject(p.group);
         disposeObject(p.orbitLine);
       }
@@ -599,10 +630,42 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
       disposeObject(stars);
       disposeObject(dust);
       glowTex.dispose();
+      hitsRoot.remove();
       labelRenderer.domElement.remove();
       renderer.dispose();
     },
   };
+}
+
+function bindHotspot(
+  el: HTMLElement,
+  onSelect: () => void,
+  onEnter: () => void,
+  onLeave: () => void,
+) {
+  let pointerId = -1;
+  let startX = 0;
+  let startY = 0;
+  el.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 && event.pointerType !== "touch") return;
+    event.preventDefault();
+    event.stopPropagation();
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    try {
+      el.setPointerCapture(event.pointerId);
+    } catch {
+      /* unsupported */
+    }
+  });
+  el.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== pointerId) return;
+    pointerId = -1;
+    if (Math.hypot(event.clientX - startX, event.clientY - startY) <= 18) onSelect();
+  });
+  el.addEventListener("pointerenter", onEnter);
+  el.addEventListener("pointerleave", onLeave);
 }
 
 function makeStarfield(): THREE.Points {
@@ -747,12 +810,7 @@ function makeSun(glowTex: THREE.Texture, onReset: () => void) {
   return { group, core, material, rings, ringsB, hit };
 }
 
-function makePlanet(
-  app: AppModule,
-  look: PlanetLook,
-  orbit: PlanetOrbit,
-  onSelect: () => void,
-): PlanetBody {
+function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): PlanetBody {
   const group = new THREE.Group();
   const spinMesh = new THREE.Group();
   group.add(spinMesh);
@@ -814,15 +872,14 @@ function makePlanet(
   labelEl.className = "planet-label";
   labelEl.textContent = app.name;
   labelEl.title = `啟動 ${app.name}`;
-  labelEl.addEventListener("pointerdown", (event) => event.stopPropagation());
-  labelEl.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onSelect();
-  });
   const labelObj = new CSS2DObject(labelEl);
   labelObj.position.set(0, look.radius + 0.38, 0);
   group.add(labelObj);
+
+  const hitBtn = document.createElement("button");
+  hitBtn.type = "button";
+  hitBtn.className = "solar-hit";
+  hitBtn.setAttribute("aria-label", `啟動 ${app.name}`);
 
   const orbitLine = makeOrbitLine(orbit, look.atmosphere);
 
@@ -834,6 +891,7 @@ function makePlanet(
     spinMesh,
     hit,
     labelEl,
+    hitBtn,
     orbitLine,
     look,
     orbit,
