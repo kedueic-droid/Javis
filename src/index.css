@@ -316,34 +316,33 @@ select {
   touch-action: none;
 }
 
+.solar-label-layer {
+  pointer-events: none;
+}
+
 .solar-hit {
-  pointer-events: auto;
+  pointer-events: auto !important;
   width: 96px;
   height: 96px;
   margin: 0;
   padding: 0;
-  border: 0;
+  border: 1px solid rgba(0, 229, 255, 0.28);
   border-radius: 999px;
-  background: transparent;
+  background: rgba(0, 229, 255, 0.06);
   cursor: pointer;
   touch-action: manipulation;
 }
 
 .solar-hit:hover,
 .solar-hit.is-hot {
-  background: rgba(0, 229, 255, 0.1);
-  box-shadow:
-    inset 0 0 0 2px rgba(0, 229, 255, 0.55),
-    0 0 18px rgba(0, 229, 255, 0.28);
-}
-
-.solar-label-layer {
-  pointer-events: none !important;
+  background: rgba(0, 229, 255, 0.16);
+  border-color: rgba(0, 229, 255, 0.7);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.28);
 }
 
 .planet-label,
 .sun-label {
-  pointer-events: auto;
+  pointer-events: auto !important;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
