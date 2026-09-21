@@ -441,7 +441,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     } catch {
       /* already released */
     }
-    if (moved > POINTER_CLICK_PX || tug.dragged) return;
+    if (tug.dragged && moved > 80) return;
     if (body) hooks.onSelect(body.id);
     else if (wasSun) {
       focusId = null;
@@ -617,16 +617,10 @@ function bindHotspot(
   onEnter: () => void,
   onLeave: () => void,
 ) {
-  let pointerId = -1;
-  let startX = 0;
-  let startY = 0;
   el.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 && event.pointerType !== "touch") return;
     event.preventDefault();
     event.stopPropagation();
-    pointerId = event.pointerId;
-    startX = event.clientX;
-    startY = event.clientY;
     try {
       el.setPointerCapture(event.pointerId);
     } catch {
@@ -634,9 +628,14 @@ function bindHotspot(
     }
   });
   el.addEventListener("pointerup", (event) => {
-    if (event.pointerId !== pointerId) return;
-    pointerId = -1;
-    if (Math.hypot(event.clientX - startX, event.clientY - startY) <= 18) onSelect();
+    if (event.button !== 0 && event.pointerType !== "touch") return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect();
+  });
+  el.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
   });
   el.addEventListener("pointerenter", onEnter);
   el.addEventListener("pointerleave", onLeave);
