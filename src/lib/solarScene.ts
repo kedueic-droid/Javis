@@ -325,36 +325,22 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   }
 
-  function projectToScreen(world: THREE.Vector3, rect: DOMRect, out: THREE.Vector2) {
-    scratch.copy(world).project(camera);
-    out.set((scratch.x * 0.5 + 0.5) * rect.width + rect.left, (-scratch.y * 0.5 + 0.5) * rect.height + rect.top);
-    return scratch.z;
-  }
-
-  const screenPt = new THREE.Vector2();
-
   function hitPlanet(event: PointerEvent): PlanetBody | null {
-    setPointerNdc(event);
-    raycaster.setFromCamera(pointerNdc, camera);
-    const hits = raycaster.intersectObjects(
-      planets.map((p) => p.hit),
-      false,
-    );
-    if (hits.length) {
-      return planets.find((p) => p.hit === hits[0].object) ?? null;
-    }
-
-    const rect = renderer.domElement.getBoundingClientRect();
     let best: PlanetBody | null = null;
-    let bestDist = 72;
+    let bestDist = Infinity;
     for (const p of planets) {
-      const ndcZ = projectToScreen(p.group.position, rect, screenPt);
-      if (ndcZ < -1 || ndcZ > 1) continue;
-      const d = Math.hypot(event.clientX - screenPt.x, event.clientY - screenPt.y);
-      const threshold = 48 + p.look.radius * 36;
-      if (d < threshold && d < bestDist) {
-        bestDist = d;
-        best = p;
+      const targets = [p.hitBtn, p.labelEl];
+      for (const el of targets) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dist = Math.hypot(event.clientX - cx, event.clientY - cy);
+        const radius = Math.max(r.width, r.height) * 0.5 + 14;
+        if (dist <= radius && dist < bestDist) {
+          bestDist = dist;
+          best = p;
+        }
       }
     }
     return best;
