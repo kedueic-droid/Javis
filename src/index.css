@@ -87,72 +87,35 @@ select {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  perspective: 820px;
-  perspective-origin: 50% 44%;
 }
 
 .hud-world {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-  transform-origin: 50% 46%;
-  transform:
-    translate3d(var(--hud-pan-x), var(--hud-pan-y), var(--hud-dolly))
-    rotateX(calc(var(--hud-pitch) * 1deg))
-    rotateY(calc(var(--hud-yaw) * 1deg))
-    scale3d(0.96, 0.96, 0.96);
-  will-change: transform;
-  cursor: grab;
+  cursor: default;
 }
 
 .hud-ui,
 .hud-workspace,
 .hud-main,
-.hud-obj,
-.hud-card-slot,
-.hud-orbit-wrap,
-.hud-orbit {
-  transform-style: preserve-3d;
+.hud-obj {
+  position: relative;
 }
 
 .hud-ui {
   padding: 8px 6px 4px;
 }
 
-.hud-obj-top {
-  translate: 0 0 28px;
-  rotate: x 1.6deg;
-}
-
-.hud-obj-wordmark {
-  translate: 0 0 14px;
-  transform-style: preserve-3d;
-}
-
-.hud-obj-rail {
-  translate: 0 0 -52px;
-  rotate: y 6deg;
-}
-
 .hud-obj-launcher {
-  translate: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
 }
 
-.hud-obj-embed {
-  translate: 0 0 56px;
-}
-
-.hud-obj-status {
-  translate: 0 0 18px;
-  rotate: x -2.2deg;
-}
-
-.hud-obj-core {
-  translate: 0 0 24px;
-}
-
-.hud-obj-corners {
-  translate: 0 0 40px;
+.hud-obj-top,
+.hud-obj-status,
+.hud-obj-rail {
+  z-index: 5;
 }
 
 .hud-scene {
@@ -333,12 +296,229 @@ select {
   translate: 0 0 -20px;
 }
 
-.hud-orbit-wrap,
-.hud-orbit {
-  transform-style: preserve-3d;
+.solar-stage {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: radial-gradient(ellipse 55% 50% at 50% 46%, rgba(0, 80, 120, 0.18), transparent 62%);
 }
 
-.hud-world button,
+.solar-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.solar-label-layer {
+  pointer-events: none;
+}
+
+.solar-hit {
+  pointer-events: none;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.solar-hit:hover,
+.solar-hit.is-hot {
+  background: rgba(0, 229, 255, 0.16);
+  border-color: rgba(0, 229, 255, 0.7);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.28);
+}
+
+.planet-label,
+.sun-label {
+  pointer-events: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.planet-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e7fbff;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  background: rgba(2, 12, 20, 0.62);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
+  backdrop-filter: blur(8px);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+}
+
+.planet-label.is-hot {
+  border-color: rgba(0, 229, 255, 0.85);
+  color: #fff;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.35);
+}
+
+.planet-label.is-dim {
+  opacity: 0.45;
+}
+
+.sun-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+}
+
+.sun-label-kicker,
+.sun-label-sub {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: rgba(122, 246, 255, 0.75);
+}
+
+.sun-label-name {
+  font-family: var(--font-hud);
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  color: #e9ffff;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.8);
+}
+
+.solar-hud {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.75rem 0.85rem;
+}
+
+.solar-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(156, 224, 242, 0.62);
+  text-align: center;
+}
+
+.solar-caption {
+  max-width: min(520px, 92%);
+  padding: 0.65rem 0.9rem 0.75rem;
+  border: 1px solid rgba(0, 229, 255, 0.32);
+  background: linear-gradient(180deg, rgba(6, 28, 40, 0.78), rgba(2, 10, 18, 0.7));
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.solar-caption-kicker {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: rgba(0, 229, 255, 0.8);
+}
+
+.solar-caption h2 {
+  margin: 0.15rem 0 0.2rem;
+  font-size: 1rem;
+  color: #eefcff;
+}
+
+.solar-caption-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(200, 236, 246, 0.78);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.solar-caption-stack {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: rgba(61, 158, 255, 0.85);
+}
+
+.solar-dense-strip {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.7rem 0.55rem;
+  border-top: 1px solid rgba(0, 229, 255, 0.18);
+  background: rgba(2, 10, 18, 0.55);
+}
+
+.solar-chip {
+  flex: 0 0 auto;
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  background: rgba(0, 40, 56, 0.4);
+  color: #c5f4ff;
+  font-size: 12px;
+  padding: 0.28rem 0.65rem;
+  white-space: nowrap;
+}
+
+.solar-chip.is-active {
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.16);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+.solar-stage.is-dense .solar-caption-desc {
+  display: none;
+}
+
+.solar-stage.is-dense .solar-hud {
+  padding-bottom: 0.4rem;
+}
+
+.solar-fallback,
+.solar-loading {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1rem;
+}
+
+.solar-fallback {
+  color: #9bebff;
+}
+
+.solar-loading {
+  font-family: var(--font-hud);
+  letter-spacing: 0.28em;
+  font-size: 12px;
+  color: rgba(122, 246, 255, 0.7);
+}
+
+.hud-root[data-hud-dragging="1"] .solar-canvas,
+.solar-stage:active .solar-canvas {
+  cursor: grabbing;
+}
+
+.hud-world button:not(.solar-hit),
 .hud-world a {
   cursor: pointer;
   position: relative;

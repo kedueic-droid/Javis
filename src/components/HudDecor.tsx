@@ -3,14 +3,9 @@ import { HudCanvas } from "./HudCanvas";
 export function HudDecor({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <div className="hud-scene" aria-hidden="true">
-      <div className="hud-wordmark-ghost">J.A.R.V.I.S.</div>
       <div className="hud-layer-far">
         <div className="hud-grid" />
         <div className="hud-circuit" />
-      </div>
-      <div className="hud-layer-floor" />
-      <div className="hud-layer-mid">
-        <HoloRings reducedMotion={reducedMotion} />
       </div>
       <HudCanvas reducedMotion={reducedMotion} />
     </div>
@@ -24,18 +19,6 @@ export function HudPostFx({ reducedMotion }: { reducedMotion: boolean }) {
       <div className="scanlines" />
       {!reducedMotion && <div className="scan-sweep" />}
       <div className="hud-pointer-glow" />
-    </div>
-  );
-}
-
-function HoloRings({ reducedMotion }: { reducedMotion: boolean }) {
-  return (
-    <div className="holo-field">
-      <span className={`holo-ring holo-ring-a ${reducedMotion ? "" : "arc-spin"}`} />
-      <span className={`holo-ring holo-ring-b ${reducedMotion ? "" : "arc-spin-rev"}`} />
-      <span className={`holo-ring holo-ring-c ${reducedMotion ? "" : "arc-spin"}`} />
-      <span className="holo-core" />
-      <span className="holo-ellipse" />
     </div>
   );
 }
