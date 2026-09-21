@@ -326,21 +326,28 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   }
 
   function hitPlanet(event: PointerEvent): PlanetBody | null {
+    const x = event.clientX;
+    const y = event.clientY;
+    for (const p of planets) {
+      const r = p.labelEl.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;
+      if (x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) {
+        return p;
+      }
+    }
+
     let best: PlanetBody | null = null;
     let bestDist = Infinity;
     for (const p of planets) {
-      const targets = [p.hitBtn, p.labelEl];
-      for (const el of targets) {
-        const r = el.getBoundingClientRect();
-        if (r.width < 2 || r.height < 2) continue;
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        const dist = Math.hypot(event.clientX - cx, event.clientY - cy);
-        const radius = Math.max(r.width, r.height) * 0.5 + 14;
-        if (dist <= radius && dist < bestDist) {
-          bestDist = dist;
-          best = p;
-        }
+      const r = p.hitBtn.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dist = Math.hypot(x - cx, y - cy);
+      const radius = Math.min(r.width, r.height) * 0.42;
+      if (dist <= radius && dist < bestDist) {
+        bestDist = dist;
+        best = p;
       }
     }
     return best;

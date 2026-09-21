@@ -321,16 +321,14 @@ select {
 }
 
 .solar-hit {
-  pointer-events: auto !important;
-  width: 96px;
-  height: 96px;
+  pointer-events: none;
+  width: 52px;
+  height: 52px;
   margin: 0;
   padding: 0;
   border: 1px solid rgba(0, 229, 255, 0.28);
   border-radius: 999px;
   background: rgba(0, 229, 255, 0.06);
-  cursor: pointer;
-  touch-action: manipulation;
 }
 
 .solar-hit:hover,
@@ -342,7 +340,7 @@ select {
 
 .planet-label,
 .sun-label {
-  pointer-events: auto !important;
+  pointer-events: none;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
