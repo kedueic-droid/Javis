@@ -15,7 +15,7 @@ export const LAYOUT_LIMITS = {
   railMax: 380,
   embedMin: 0.34,
   embedMax: 0.8,
-  launcherMinPx: 240,
+  launcherMinPx: 280,
   embedMinPxX: 320,
   embedMinPxY: 200,
   launcherMinPxY: 148,

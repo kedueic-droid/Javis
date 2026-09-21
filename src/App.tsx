@@ -14,7 +14,6 @@ import { useApps } from "./hooks/useApps";
 import { useClock } from "./hooks/useClock";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useHudLayout } from "./hooks/useHudLayout";
-import { useHudScene } from "./hooks/useHudScene";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useReducedMotion } from "./hooks/useReducedMotion";
 import { playBootChime, playConfirmBlip } from "./lib/audio";
@@ -41,10 +40,8 @@ export default function App() {
   const isWide = useMediaQuery("(min-width: 1024px)");
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  useHudScene(rootRef, stageRef, reducedMotion);
 
   const [booting, setBooting] = useState(() => !settings.skipBoot && !reducedMotion);
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -193,7 +190,7 @@ export default function App() {
 
       {booting && <BootSequence reducedMotion={reducedMotion} onDone={finishBoot} />}
 
-      <div ref={stageRef} className="hud-stage min-h-0 flex-1">
+      <div className="hud-stage min-h-0 flex-1">
         <div className="hud-world">
           <HudDecor reducedMotion={reducedMotion} />
           <CornerMarks />
@@ -256,7 +253,6 @@ export default function App() {
                     activeId={embedApp?.id}
                     reducedMotion={reducedMotion}
                     onLaunch={handleLaunch}
-                    onOpenExternal={openTab}
                     onConfigure={() => setOverlay("settings")}
                   />
                 </div>
