@@ -98,52 +98,24 @@ select {
 .hud-ui,
 .hud-workspace,
 .hud-main,
-.hud-obj,
-.hud-card-slot,
-.hud-orbit-wrap,
-.hud-orbit {
-  transform-style: preserve-3d;
+.hud-obj {
+  position: relative;
 }
 
 .hud-ui {
   padding: 8px 6px 4px;
 }
 
-.hud-obj-top {
-  translate: 0 0 28px;
-  rotate: x 1.6deg;
-}
-
-.hud-obj-wordmark {
-  translate: 0 0 14px;
-  transform-style: preserve-3d;
-}
-
-.hud-obj-rail {
-  translate: 0 0 -52px;
-  rotate: y 6deg;
-}
-
 .hud-obj-launcher {
   display: flex;
   flex-direction: column;
+  z-index: 1;
 }
 
-.hud-obj-embed {
-  translate: 0 0 0;
-}
-
-.hud-obj-status {
-  translate: 0 0 18px;
-  rotate: x -2.2deg;
-}
-
-.hud-obj-core {
-  translate: 0 0 24px;
-}
-
-.hud-obj-corners {
-  translate: 0 0 40px;
+.hud-obj-top,
+.hud-obj-status,
+.hud-obj-rail {
+  z-index: 5;
 }
 
 .hud-scene {
@@ -335,6 +307,8 @@ select {
 }
 
 .solar-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -355,7 +329,8 @@ select {
 
 .planet-label,
 .sun-label {
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   user-select: none;
   white-space: nowrap;
   text-align: center;

@@ -41,7 +41,7 @@ interface PlanetBody {
 }
 
 const HOME_TARGET = new THREE.Vector3(0, 0.15, 0);
-const POINTER_CLICK_PX = 9;
+const POINTER_CLICK_PX = 16;
 const TUG_MAX = 1.15;
 
 const SUN_VERT = /* glsl */ `
@@ -210,7 +210,10 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   scene.add(dust);
 
   const glowTex = createGlowTexture();
-  const sun = makeSun(glowTex);
+  const sun = makeSun(glowTex, () => {
+    focusId = null;
+    applyHomePose(false);
+  });
   scene.add(sun.group);
 
   const planetsRoot = new THREE.Group();
@@ -292,7 +295,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     apps.forEach((app, index) => {
       const look = lookForApp(app);
       const orbit = orbitForIndex(index, apps.length);
-      const body = makePlanet(app, look, orbit);
+      const body = makePlanet(app, look, orbit, () => hooks.onSelect(app.id));
       planets.push(body);
       planetsRoot.add(body.orbitLine);
       planetsRoot.add(body.group);
@@ -318,6 +321,14 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   }
 
+  function projectToScreen(world: THREE.Vector3, rect: DOMRect, out: THREE.Vector2) {
+    scratch.copy(world).project(camera);
+    out.set((scratch.x * 0.5 + 0.5) * rect.width + rect.left, (-scratch.y * 0.5 + 0.5) * rect.height + rect.top);
+    return scratch.z;
+  }
+
+  const screenPt = new THREE.Vector2();
+
   function hitPlanet(event: PointerEvent): PlanetBody | null {
     setPointerNdc(event);
     raycaster.setFromCamera(pointerNdc, camera);
@@ -325,8 +336,24 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
       planets.map((p) => p.hit),
       false,
     );
-    if (!hits.length) return null;
-    return planets.find((p) => p.hit === hits[0].object) ?? null;
+    if (hits.length) {
+      return planets.find((p) => p.hit === hits[0].object) ?? null;
+    }
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    let best: PlanetBody | null = null;
+    let bestDist = 72;
+    for (const p of planets) {
+      const ndcZ = projectToScreen(p.group.position, rect, screenPt);
+      if (ndcZ < -1 || ndcZ > 1) continue;
+      const d = Math.hypot(event.clientX - screenPt.x, event.clientY - screenPt.y);
+      const threshold = 48 + p.look.radius * 36;
+      if (d < threshold && d < bestDist) {
+        bestDist = d;
+        best = p;
+      }
+    }
+    return best;
   }
 
   function hitSun(event: PointerEvent): boolean {
@@ -339,6 +366,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     if (event.button !== 0 && event.pointerType !== "touch") return;
     const body = hitPlanet(event);
     if (body) {
+      event.preventDefault();
       event.stopPropagation();
       controls.enabled = false;
       tug.planet = body;
@@ -622,7 +650,7 @@ function makeDustRing(): THREE.Mesh {
   return new THREE.Mesh(geo, mat);
 }
 
-function makeSun(glowTex: THREE.Texture) {
+function makeSun(glowTex: THREE.Texture, onReset: () => void) {
   const group = new THREE.Group();
   const coreGeo = new THREE.SphereGeometry(SUN.radius, 64, 48);
   const material = new THREE.ShaderMaterial({
@@ -700,12 +728,18 @@ function makeSun(glowTex: THREE.Texture) {
   const label = document.createElement("div");
   label.className = "sun-label";
   label.innerHTML = `<span class="sun-label-kicker">CORE</span><span class="sun-label-name">J.A.R.V.I.S.</span><span class="sun-label-sub">核心協議</span>`;
+  label.addEventListener("pointerdown", (event) => event.stopPropagation());
+  label.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onReset();
+  });
   const labelObj = new CSS2DObject(label);
   labelObj.position.set(0, -SUN.radius - 0.55, 0);
   group.add(labelObj);
 
   const hit = new THREE.Mesh(
-    new THREE.SphereGeometry(SUN.radius * 1.25, 16, 12),
+    new THREE.SphereGeometry(SUN.radius * 1.7, 16, 12),
     new THREE.MeshBasicMaterial({ visible: false }),
   );
   group.add(hit);
@@ -713,7 +747,12 @@ function makeSun(glowTex: THREE.Texture) {
   return { group, core, material, rings, ringsB, hit };
 }
 
-function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): PlanetBody {
+function makePlanet(
+  app: AppModule,
+  look: PlanetLook,
+  orbit: PlanetOrbit,
+  onSelect: () => void,
+): PlanetBody {
   const group = new THREE.Group();
   const spinMesh = new THREE.Group();
   group.add(spinMesh);
@@ -766,7 +805,7 @@ function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): Plane
   }
 
   const hit = new THREE.Mesh(
-    new THREE.SphereGeometry(look.radius * 1.55, 16, 12),
+    new THREE.SphereGeometry(look.radius * 2.6, 16, 12),
     new THREE.MeshBasicMaterial({ visible: false }),
   );
   group.add(hit);
@@ -774,6 +813,13 @@ function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): Plane
   const labelEl = document.createElement("div");
   labelEl.className = "planet-label";
   labelEl.textContent = app.name;
+  labelEl.title = `啟動 ${app.name}`;
+  labelEl.addEventListener("pointerdown", (event) => event.stopPropagation());
+  labelEl.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect();
+  });
   const labelObj = new CSS2DObject(labelEl);
   labelObj.position.set(0, look.radius + 0.38, 0);
   group.add(labelObj);
