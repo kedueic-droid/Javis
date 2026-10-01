@@ -93,6 +93,15 @@ export function IconRadar({ className }: IconProps) {
   );
 }
 
+export function IconFleet({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.4" d="M12 2.5 20 9l-8 12.5L4 9 12 2.5z" />
+      <path fill="none" stroke="currentColor" strokeWidth="1.2" d="M4 9h16M12 2.5 8.2 9 12 21.5 15.8 9 12 2.5" />
+    </svg>
+  );
+}
+
 export function IconShield({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">

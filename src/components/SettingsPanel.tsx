@@ -103,6 +103,9 @@ export function SettingsPanel({
 
           <section>
             <h3 className="font-hud mb-3 text-[11px] tracking-[0.28em] text-cyan-300/80">應用模組</h3>
+            <p className="mb-3 text-xs leading-relaxed text-cyan-200/55">
+              AI 艦隊不在這裡填網址。點外圈行星或側欄「AI 艦隊」會開啟代理人橋接，任務筆記另存在此瀏覽器。
+            </p>
             <div className="space-y-4">
               {apps.map((app) => (
                 <div key={app.id} className="border border-cyan-400/20 p-3">

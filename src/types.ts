@@ -44,3 +44,21 @@ export interface ToastMessage {
 }
 
 export type Overlay = "none" | "settings" | "palette";
+
+export interface FleetAgent {
+  id: string;
+  name: string;
+  role: string;
+  defaultMission: string;
+}
+
+export type FleetCommandStatus = "pending" | "sent" | "result";
+
+export interface FleetCommand {
+  id: string;
+  agentId: string;
+  agentName: string;
+  text: string;
+  status: FleetCommandStatus;
+  createdAt: string;
+}

@@ -1,28 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FLEET_AGENTS, FLEET_GROUP_LABEL } from "../data/fleet";
 import { deriveStatus, statusLabel } from "../lib/time";
-import type { AppModule } from "../types";
-import { AppIcon } from "./icons";
+import type { AppModule, FleetAgent, FleetCommand } from "../types";
+import { FleetDispatch } from "./FleetDispatch";
+import { AppIcon, IconFleet } from "./icons";
 
 interface CommandPaletteProps {
   apps: AppModule[];
+  fleet?: FleetAgent[];
+  queue: FleetCommand[];
   onClose: () => void;
   onLaunch: (app: AppModule) => void;
+  onLaunchFleet: (agent: FleetAgent) => void;
   onOpenExternal: (app: AppModule) => void;
   onOpenSettings: () => void;
   onAddApp: () => void;
+  onEnqueue: (agentId: string, text: string) => { ok: true } | { ok: false; reason: string };
+  onRemoveCommand: (id: string) => void;
 }
 
 type PaletteItem =
   | { id: string; title: string; hint: string; kind: "app"; app: AppModule }
+  | { id: string; title: string; hint: string; kind: "fleet"; agent: FleetAgent }
   | { id: string; title: string; hint: string; kind: "settings" | "add" };
 
 export function CommandPalette({
   apps,
+  fleet = FLEET_AGENTS,
+  queue,
   onClose,
   onLaunch,
+  onLaunchFleet,
   onOpenExternal,
   onOpenSettings,
   onAddApp,
+  onEnqueue,
+  onRemoveCommand,
 }: CommandPaletteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -46,13 +59,26 @@ export function CommandPalette({
         kind: "app" as const,
       }));
 
+    const fleetItems = fleet
+      .filter((agent) => {
+        if (!q) return true;
+        return [agent.name, agent.role, agent.defaultMission, FLEET_GROUP_LABEL].join(" ").toLowerCase().includes(q);
+      })
+      .map((agent) => ({
+        id: `fleet-${agent.id}`,
+        title: agent.name,
+        hint: `${FLEET_GROUP_LABEL} · ${agent.role}`,
+        agent,
+        kind: "fleet" as const,
+      }));
+
     const extras = [
       { id: "cmd-settings", title: "開啟設定", hint: "編輯網址、匯入匯出", kind: "settings" as const },
       { id: "cmd-add", title: "新增應用", hint: "加入自訂啟動器", kind: "add" as const },
     ].filter((item) => !q || item.title.includes(query.trim()) || item.hint.includes(query.trim()));
 
-    return [...appItems, ...extras];
-  }, [apps, query]);
+    return [...appItems, ...fleetItems, ...extras];
+  }, [apps, fleet, query]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -73,6 +99,10 @@ export function CommandPalette({
       onAddApp();
       return;
     }
+    if (item.kind === "fleet") {
+      onLaunchFleet(item.agent);
+      return;
+    }
     if (item.kind === "app" && item.app.enabled && item.app.url.trim()) {
       onLaunch(item.app);
       return;
@@ -83,7 +113,7 @@ export function CommandPalette({
   return (
     <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/72 px-4 pt-[12vh]" role="dialog" aria-label="指令監視台">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="關閉" onClick={onClose} />
-      <div className="panel relative z-10 w-full max-w-xl overflow-hidden bg-[#041018]/95">
+      <div className="panel relative z-10 flex max-h-[78vh] w-full max-w-xl flex-col overflow-hidden bg-[#041018]/95">
         <div className="flex items-center gap-3 border-b border-cyan-400/20 px-4 py-3">
           <span className="font-hud text-[10px] tracking-[0.3em] text-cyan-400/80">COMMAND</span>
           <input
@@ -102,13 +132,13 @@ export function CommandPalette({
                 run(index);
               }
             }}
-            placeholder="搜尋應用、指令…"
+            placeholder="搜尋應用、AI 艦隊、指令…"
             className="w-full bg-transparent px-1 py-1 text-cyan-50 outline-none"
             aria-label="搜尋指令"
           />
           <span className="kbd">ESC</span>
         </div>
-        <ul className="max-h-[50vh] overflow-auto py-2">
+        <ul className="min-h-0 flex-1 overflow-auto py-2">
           {commands.length === 0 && (
             <li className="px-4 py-6 text-center text-sm text-cyan-200/60">沒有符合的模組</li>
           )}
@@ -126,6 +156,8 @@ export function CommandPalette({
                 <span className="flex h-8 w-8 items-center justify-center border border-cyan-400/30 text-cyan-200">
                   {item.kind === "app" ? (
                     <AppIcon name={item.app.icon} className="h-4 w-4" />
+                  ) : item.kind === "fleet" ? (
+                    <IconFleet className="h-4 w-4 text-amber-200" />
                   ) : (
                     <span className="font-hud text-[10px]">CMD</span>
                   )}
@@ -147,6 +179,9 @@ export function CommandPalette({
             </li>
           ))}
         </ul>
+        <div className="min-h-0 max-h-[46%] overflow-auto">
+          <FleetDispatch queue={queue} onEnqueue={onEnqueue} onRemove={onRemoveCommand} />
+        </div>
       </div>
     </div>
   );

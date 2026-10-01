@@ -2,7 +2,7 @@ import { SUGGESTED_PORTS } from "../data/defaults";
 import { deriveStatus } from "../lib/time";
 import type { AppModule } from "../types";
 
-export function StatusStrip({ apps, clock }: { apps: AppModule[]; clock: string }) {
+export function StatusStrip({ apps, fleetCount, clock }: { apps: AppModule[]; fleetCount: number; clock: string }) {
   const enabled = apps.filter((a) => a.enabled);
   const ready = enabled.filter((a) => deriveStatus(a.url, a.enabled) === "standby").length;
   const pending = enabled.length - ready;
@@ -11,6 +11,7 @@ export function StatusStrip({ apps, clock }: { apps: AppModule[]; clock: string 
     { k: "CORE", v: "ONLINE" },
     { k: "NET", v: "STABLE" },
     { k: "APPS", v: `${ready}/${enabled.length}` },
+    { k: "FLEET", v: `${fleetCount} BRIDGE` },
     { k: "CFG", v: pending ? `${pending} PENDING` : "CLEAR" },
     { k: "CLK", v: clock },
   ];
@@ -31,7 +32,7 @@ export function StatusStrip({ apps, clock }: { apps: AppModule[]; clock: string 
         ))}
       </div>
       <p className="mt-1 px-1 text-center font-mono text-[10px] leading-relaxed text-cyan-300/45">
-        拖曳星系空白處或「操控場景」環繞太陽系；點選行星投影模組；內嵌畫面與分隔線不會被帶走
+        拖曳星系空白處或「操控場景」環繞太陽系；內圈行星投影應用，外圈晶體開啟 AI 艦隊
       </p>
       <p className="sr-only">
         建議埠位：

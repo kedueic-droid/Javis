@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { AgentBridge } from "./components/AgentBridge";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette } from "./components/CommandPalette";
 import { EmbedStage } from "./components/EmbedStage";
@@ -10,8 +11,10 @@ import { SideRail } from "./components/SideRail";
 import { StatusStrip } from "./components/StatusStrip";
 import { ToastStack } from "./components/ToastStack";
 import { TopBar } from "./components/TopBar";
+import { FLEET_AGENTS, findFleetAgent } from "./data/fleet";
 import { useApps } from "./hooks/useApps";
 import { useClock } from "./hooks/useClock";
+import { useFleet } from "./hooks/useFleet";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useHudLayout } from "./hooks/useHudLayout";
 import { useMediaQuery } from "./hooks/useMediaQuery";
@@ -19,7 +22,9 @@ import { useReducedMotion } from "./hooks/useReducedMotion";
 import { playBootChime, playConfirmBlip } from "./lib/audio";
 import { createId } from "./lib/cn";
 import { clamp, LAYOUT_LIMITS } from "./lib/layout";
-import type { AppModule, Overlay, ToastMessage } from "./types";
+import type { AppModule, FleetAgent, Overlay, ToastMessage } from "./types";
+
+type ActiveStage = { kind: "embed"; app: AppModule } | { kind: "agent"; agentId: string } | null;
 
 export default function App() {
   const reducedMotion = useReducedMotion();
@@ -35,6 +40,7 @@ export default function App() {
     exportJson,
     importJson,
   } = useApps();
+  const fleet = useFleet();
   const { layout, setRailWidth, setEmbedRatio } = useHudLayout();
   const isXl = useMediaQuery("(min-width: 1280px)");
   const isWide = useMediaQuery("(min-width: 1024px)");
@@ -45,13 +51,13 @@ export default function App() {
 
   const [booting, setBooting] = useState(() => !settings.skipBoot && !reducedMotion);
   const [overlay, setOverlay] = useState<Overlay>("none");
-  const [embedApp, setEmbedApp] = useState<AppModule | null>(null);
+  const [stage, setStage] = useState<ActiveStage>(null);
   const [focusAdd, setFocusAdd] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [logs, setLogs] = useState<string[]>(() => [
     `${clock}  指揮中心初始化`,
-    `${clock}  目錄載入 ${apps.length} 個模組`,
+    `${clock}  目錄載入 ${apps.length} 個模組 · AI 艦隊 ${FLEET_AGENTS.length} 名`,
   ]);
 
   const pushToast = useCallback((text: string, tone: ToastMessage["tone"] = "info") => {
@@ -86,11 +92,23 @@ export default function App() {
         setOverlay("settings");
         return;
       }
-      setEmbedApp(app);
+      setStage({ kind: "embed", app });
       setOverlay("none");
       setFocusAdd(false);
       pushLog(`投影 ${app.name}`);
       pushToast(`已於指揮中心載入「${app.name}」`, "ok");
+      if (settings.soundEnabled) void playConfirmBlip();
+    },
+    [pushLog, pushToast, settings.soundEnabled],
+  );
+
+  const openAgent = useCallback(
+    (agent: FleetAgent) => {
+      setStage({ kind: "agent", agentId: agent.id });
+      setOverlay("none");
+      setFocusAdd(false);
+      pushLog(`橋接 ${agent.name}`);
+      pushToast(`已開啟代理人「${agent.name}」`, "ok");
       if (settings.soundEnabled) void playConfirmBlip();
     },
     [pushLog, pushToast, settings.soundEnabled],
@@ -109,8 +127,8 @@ export default function App() {
     setFocusAdd(false);
   }, []);
 
-  const closeEmbed = useCallback(() => {
-    setEmbedApp(null);
+  const closeStage = useCallback(() => {
+    setStage(null);
   }, []);
 
   const onEscape = useCallback(() => {
@@ -118,8 +136,8 @@ export default function App() {
       closeOverlay();
       return;
     }
-    if (embedApp) closeEmbed();
-  }, [closeEmbed, closeOverlay, embedApp, overlay]);
+    if (stage) closeStage();
+  }, [closeOverlay, closeStage, overlay, stage]);
 
   const hotkeyHandlers = useMemo(
     () => ({
@@ -177,7 +195,9 @@ export default function App() {
     [isWide, layout.embedRatio, setEmbedRatio],
   );
 
-  const embedOpen = Boolean(embedApp);
+  const embedOpen = stage !== null;
+  const activeId = stage?.kind === "embed" ? stage.app.id : stage?.kind === "agent" ? stage.agentId : null;
+  const bridgeAgent = stage?.kind === "agent" ? findFleetAgent(stage.agentId) : undefined;
 
   return (
     <div ref={rootRef} className="hud-root flex h-dvh flex-col overflow-hidden">
@@ -213,9 +233,11 @@ export default function App() {
                   <div className="hud-obj hud-obj-rail flex min-h-0 shrink-0 self-stretch" style={{ width: layout.railWidth }}>
                     <SideRail
                       apps={apps}
+                      fleet={FLEET_AGENTS}
                       logs={logs}
-                      activeId={embedApp?.id}
+                      activeId={activeId}
                       onSelect={handleLaunch}
+                      onSelectFleet={openAgent}
                       onOpenSettings={() => setOverlay("settings")}
                     />
                   </div>
@@ -249,15 +271,18 @@ export default function App() {
                 >
                   <LauncherStage
                     apps={apps}
+                    fleet={FLEET_AGENTS}
+                    fleetMission={fleet.missionOf}
                     dense={embedOpen}
-                    activeId={embedApp?.id}
+                    activeId={activeId}
                     reducedMotion={reducedMotion}
                     onLaunch={handleLaunch}
+                    onLaunchFleet={openAgent}
                     onConfigure={() => setOverlay("settings")}
                   />
                 </div>
 
-                {embedApp && (
+                {stage && (
                   <>
                     <ResizeHandle
                       orientation={isWide ? "vertical" : "horizontal"}
@@ -275,12 +300,25 @@ export default function App() {
                         }px`,
                       }}
                     >
-                      <EmbedStage
-                        app={embedApp}
-                        shieldPointer={dragging}
-                        onClose={closeEmbed}
-                        onOpenTab={openTab}
-                      />
+                      {stage.kind === "embed" ? (
+                        <EmbedStage
+                          app={stage.app}
+                          shieldPointer={dragging}
+                          onClose={closeStage}
+                          onOpenTab={openTab}
+                        />
+                      ) : bridgeAgent ? (
+                        <AgentBridge
+                          agent={bridgeAgent}
+                          mission={fleet.missionOf(bridgeAgent)}
+                          shieldPointer={dragging}
+                          onMissionChange={fleet.setMission}
+                          onResetMission={fleet.resetMission}
+                          onClose={closeStage}
+                          onOpenPalette={() => setOverlay("palette")}
+                          onNotify={pushToast}
+                        />
+                      ) : null}
                     </div>
                   </>
                 )}
@@ -288,7 +326,7 @@ export default function App() {
             </div>
 
             <div className="hud-obj hud-obj-status shrink-0">
-              <StatusStrip apps={apps} clock={clock} />
+              <StatusStrip apps={apps} fleetCount={FLEET_AGENTS.length} clock={clock} />
             </div>
           </div>
         </div>
@@ -334,8 +372,11 @@ export default function App() {
       {overlay === "palette" && (
         <CommandPalette
           apps={apps}
+          fleet={FLEET_AGENTS}
+          queue={fleet.queue}
           onClose={closeOverlay}
           onLaunch={handleLaunch}
+          onLaunchFleet={openAgent}
           onOpenExternal={openTab}
           onOpenSettings={() => {
             setFocusAdd(false);
@@ -345,6 +386,8 @@ export default function App() {
             setFocusAdd(true);
             setOverlay("settings");
           }}
+          onEnqueue={fleet.enqueue}
+          onRemoveCommand={fleet.removeCommand}
         />
       )}
 

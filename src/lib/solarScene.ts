@@ -5,7 +5,8 @@ import type { SolarCamCmd } from "./solarCamera";
 import {
   defaultCameraDistance,
   lookForApp,
-  maxCameraDistance,
+  lookForFleet,
+  orbitForFleet,
   orbitForIndex,
   SUN,
   type PlanetLook,
@@ -20,6 +21,7 @@ export interface SolarSceneHost {
 
 export interface SolarSceneHooks {
   getApps: () => AppModule[];
+  getFleet: () => { id: string; name: string }[];
   getActiveId: () => string | null;
   getReducedMotion: () => boolean;
   onSelect: (id: string) => void;
@@ -28,6 +30,7 @@ export interface SolarSceneHooks {
 
 interface PlanetBody {
   id: string;
+  kind: "app" | "fleet";
   group: THREE.Group;
   mesh: THREE.Mesh;
   atmosphere: THREE.Mesh;
@@ -249,7 +252,10 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   });
 
   function homeDistance() {
-    return defaultCameraDistance(Math.max(1, planets.length));
+    const hasFleet = planets.some((planet) => planet.kind === "fleet");
+    if (!hasFleet) return defaultCameraDistance(Math.max(1, planets.length));
+    const outer = planets.reduce((max, planet) => Math.max(max, planet.orbit.radius), 6);
+    return Math.max(16, (outer + 1.8) * 1.48);
   }
 
   function applyHomePose(instant: boolean) {
@@ -281,7 +287,11 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
 
   function rebuildPlanets() {
     const apps = hooks.getApps();
-    const sig = apps.map((a) => `${a.id}|${a.name}|${a.icon}|${a.enabled}`).join(";");
+    const fleet = hooks.getFleet();
+    const sig = [
+      apps.map((a) => `${a.id}|${a.name}|${a.icon}|${a.enabled}`).join(";"),
+      fleet.map((agent) => `${agent.id}|${agent.name}`).join(";"),
+    ].join("||");
     if (sig === appSignature) return;
     appSignature = sig;
 
@@ -294,18 +304,27 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     }
     planets.length = 0;
 
-    apps.forEach((app, index) => {
-      const look = lookForApp(app);
-      const orbit = orbitForIndex(index, apps.length);
-      const body = makePlanet(app, look, orbit);
-      bindHotspot(body.hitBtn, () => hooks.onSelect(app.id), () => hooks.onHover(app.id), () => hooks.onHover(null));
-      bindHotspot(body.labelEl, () => hooks.onSelect(app.id), () => hooks.onHover(app.id), () => hooks.onHover(null));
+    const attach = (body: PlanetBody, id: string) => {
+      bindHotspot(body.hitBtn, () => hooks.onSelect(id), () => hooks.onHover(id), () => hooks.onHover(null));
+      bindHotspot(body.labelEl, () => hooks.onSelect(id), () => hooks.onHover(id), () => hooks.onHover(null));
       planets.push(body);
       planetsRoot.add(body.orbitLine);
       planetsRoot.add(body.group);
+    };
+
+    apps.forEach((app, index) => {
+      const look = lookForApp(app);
+      const orbit = orbitForIndex(index, apps.length);
+      attach(makePlanet({ id: app.id, name: app.name, kind: "app" }, look, orbit), app.id);
     });
 
-    controls.maxDistance = maxCameraDistance(apps.length);
+    fleet.forEach((agent, index) => {
+      const look = lookForFleet(index);
+      const orbit = orbitForFleet(index, fleet.length, apps.length);
+      attach(makePlanet({ id: agent.id, name: agent.name, kind: "fleet" }, look, orbit), agent.id);
+    });
+
+    controls.maxDistance = Math.max(32, homeDistance() * 2.1);
     if (!focusId) {
       const dist = homeDistance();
       if (camera.position.length() < 2) camera.position.set(0, dist * 0.42, dist * 0.9);
@@ -667,7 +686,7 @@ function makeStarfield(): THREE.Points {
 }
 
 function makeDustRing(): THREE.Mesh {
-  const geo = new THREE.RingGeometry(3.2, 12.5, 96, 1);
+  const geo = new THREE.RingGeometry(3.2, 14.4, 128, 1);
   geo.rotateX(-Math.PI / 2);
   const mat = new THREE.MeshBasicMaterial({
     color: 0x00e5ff,
@@ -776,21 +795,41 @@ function makeSun(glowTex: THREE.Texture, onReset: () => void) {
   return { group, core, material, rings, ringsB, hit };
 }
 
-function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): PlanetBody {
+function makePlanet(
+  spec: { id: string; name: string; kind: "app" | "fleet" },
+  look: PlanetLook,
+  orbit: PlanetOrbit,
+): PlanetBody {
   const group = new THREE.Group();
   const spinMesh = new THREE.Group();
   group.add(spinMesh);
 
-  const geo = new THREE.SphereGeometry(look.radius, 48, 36);
+  const geo =
+    spec.kind === "fleet"
+      ? new THREE.IcosahedronGeometry(look.radius, 0)
+      : new THREE.SphereGeometry(look.radius, 48, 36);
   const mat = new THREE.MeshStandardMaterial({
     color: look.color,
     emissive: look.emissive,
     emissiveIntensity: 0.45,
     roughness: look.roughness,
     metalness: look.metalness,
+    flatShading: spec.kind === "fleet",
   });
   const mesh = new THREE.Mesh(geo, mat);
   spinMesh.add(mesh);
+
+  if (spec.kind === "fleet") {
+    const shell = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(look.radius * 1.08, 0)),
+      new THREE.LineBasicMaterial({
+        color: look.atmosphere,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    );
+    spinMesh.add(shell);
+  }
 
   const atmosphere = new THREE.Mesh(
     new THREE.SphereGeometry(look.radius * 1.16, 32, 24),
@@ -835,17 +874,26 @@ function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): Plane
   group.add(hit);
 
   const labelEl = document.createElement("div");
-  labelEl.className = "planet-label";
-  labelEl.textContent = app.name;
-  labelEl.title = `啟動 ${app.name}`;
+  labelEl.className = spec.kind === "fleet" ? "planet-label is-fleet" : "planet-label";
+  if (spec.kind === "fleet") {
+    const kicker = document.createElement("span");
+    kicker.className = "planet-label-kicker";
+    kicker.textContent = "艦隊";
+    const nameEl = document.createElement("span");
+    nameEl.textContent = spec.name;
+    labelEl.append(kicker, nameEl);
+  } else {
+    labelEl.textContent = spec.name;
+  }
+  labelEl.title = spec.kind === "fleet" ? `橋接 ${spec.name}` : `啟動 ${spec.name}`;
   const labelObj = new CSS2DObject(labelEl);
-  labelObj.position.set(0, look.radius + 0.38, 0);
+  labelObj.position.set(0, look.radius + (spec.kind === "fleet" ? 0.52 : 0.38), 0);
   group.add(labelObj);
 
   const hitBtn = document.createElement("button");
   hitBtn.type = "button";
-  hitBtn.className = "solar-hit";
-  hitBtn.setAttribute("aria-label", `啟動 ${app.name}`);
+  hitBtn.className = spec.kind === "fleet" ? "solar-hit is-fleet" : "solar-hit";
+  hitBtn.setAttribute("aria-label", spec.kind === "fleet" ? `橋接 ${spec.name}` : `啟動 ${spec.name}`);
   const hitObj = new CSS2DObject(hitBtn);
   hitObj.position.set(0, 0, 0);
   group.add(hitObj);
@@ -853,7 +901,8 @@ function makePlanet(app: AppModule, look: PlanetLook, orbit: PlanetOrbit): Plane
   const orbitLine = makeOrbitLine(orbit, look.atmosphere);
 
   return {
-    id: app.id,
+    id: spec.id,
+    kind: spec.kind,
     group,
     mesh,
     atmosphere,

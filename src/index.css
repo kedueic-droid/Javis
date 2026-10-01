@@ -371,6 +371,41 @@ select {
   opacity: 0.45;
 }
 
+.planet-label.is-fleet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  border-color: rgba(240, 193, 75, 0.55);
+  box-shadow: 0 0 16px rgba(240, 193, 75, 0.16);
+  text-shadow: 0 0 10px rgba(240, 193, 75, 0.35);
+}
+
+.planet-label.is-fleet.is-hot {
+  border-color: rgba(240, 193, 75, 0.95);
+  color: #fff;
+  box-shadow: 0 0 22px rgba(240, 193, 75, 0.4);
+}
+
+.planet-label-kicker {
+  font-family: var(--font-hud);
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  color: rgba(240, 193, 75, 0.92);
+}
+
+.solar-hit.is-fleet {
+  border-color: rgba(240, 193, 75, 0.45);
+  background: rgba(240, 193, 75, 0.08);
+}
+
+.solar-hit.is-fleet:hover,
+.solar-hit.is-fleet.is-hot {
+  background: rgba(240, 193, 75, 0.18);
+  border-color: rgba(240, 193, 75, 0.85);
+  box-shadow: 0 0 18px rgba(240, 193, 75, 0.35);
+}
+
 .sun-label {
   display: flex;
   flex-direction: column;
@@ -457,6 +492,35 @@ select {
   color: rgba(61, 158, 255, 0.85);
 }
 
+.solar-caption.is-fleet {
+  border-color: rgba(240, 193, 75, 0.4);
+  box-shadow: 0 0 24px rgba(240, 193, 75, 0.12);
+}
+
+.solar-caption.is-fleet .solar-caption-kicker,
+.solar-caption.is-fleet .solar-caption-stack {
+  color: rgba(240, 193, 75, 0.9);
+}
+
+.solar-legend {
+  pointer-events: none;
+  position: absolute;
+  top: 0.65rem;
+  left: 0.75rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: rgba(180, 230, 245, 0.72);
+}
+
+.solar-legend span:last-child {
+  color: rgba(240, 193, 75, 0.88);
+}
+
 .solar-dense-strip {
   display: flex;
   gap: 0.4rem;
@@ -480,6 +544,32 @@ select {
   border-color: #00e5ff;
   background: rgba(0, 229, 255, 0.16);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+.solar-chip.is-fleet {
+  border-color: rgba(240, 193, 75, 0.4);
+  color: #ffe7a8;
+}
+
+.solar-chip.is-fleet.is-active {
+  border-color: #f0c14b;
+  background: rgba(240, 193, 75, 0.16);
+  box-shadow: 0 0 12px rgba(240, 193, 75, 0.22);
+}
+
+.solar-chip-label {
+  flex: 0 0 auto;
+  align-self: center;
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(0, 229, 255, 0.65);
+  padding: 0 0.15rem;
+}
+
+.solar-chip-label.is-fleet {
+  color: rgba(240, 193, 75, 0.85);
+  margin-left: 0.35rem;
 }
 
 .solar-stage.is-dense .solar-caption-desc {
