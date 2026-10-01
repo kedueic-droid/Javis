@@ -934,116 +934,6 @@ textarea::placeholder {
   background: rgba(0, 40, 60, 0.5);
 }
 
-.jarvis-companion {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.jarvis-companion-body,
-.jarvis-companion-trail {
-  position: absolute;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-}
-
-.jarvis-companion-trail {
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 999px;
-  background: rgba(0, 229, 255, 0.85);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.75);
-  opacity: 0;
-}
-
-.jarvis-companion-body {
-  width: 76px;
-  height: 76px;
-  margin: -38px 0 0 -38px;
-}
-
-.jarvis-companion-halo,
-.jarvis-companion-ring,
-.jarvis-companion-core,
-.jarvis-companion-tick {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.jarvis-companion-halo {
-  inset: -18px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(0, 229, 255, 0.28), transparent 68%);
-  filter: blur(2px);
-}
-
-.jarvis-companion-ring {
-  inset: 4px;
-  border-radius: 999px;
-  border: 1px dashed rgba(0, 229, 255, 0.75);
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
-  animation: jarvis-spin 14s linear infinite;
-}
-
-.jarvis-companion-ring-inner {
-  inset: 14px;
-  border-style: solid;
-  border-color: rgba(125, 246, 255, 0.45);
-  animation-duration: 9s;
-  animation-direction: reverse;
-}
-
-.jarvis-companion-core {
-  inset: 24px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 38% 34%, #f4ffff, #7af6ff 28%, #00b7d4 64%, #062833 100%);
-  box-shadow:
-    0 0 16px rgba(0, 229, 255, 0.9),
-    0 0 36px rgba(0, 229, 255, 0.35);
-}
-
-.jarvis-companion-pupil {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #041018;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
-}
-
-.jarvis-companion-tick {
-  inset: 8px;
-  background:
-    linear-gradient(rgba(186, 251, 255, 0.85), rgba(186, 251, 255, 0.85)) center / 18px 1px no-repeat,
-    linear-gradient(rgba(186, 251, 255, 0.85), rgba(186, 251, 255, 0.85)) center / 1px 18px no-repeat;
-}
-
-.jarvis-companion-tick-h {
-  background: linear-gradient(rgba(186, 251, 255, 0.8), rgba(186, 251, 255, 0.8)) center / 22px 1px no-repeat;
-}
-
-.jarvis-companion-tick-v {
-  background: linear-gradient(rgba(186, 251, 255, 0.8), rgba(186, 251, 255, 0.8)) center / 1px 22px no-repeat;
-}
-
-.jarvis-companion.is-attentive .jarvis-companion-core {
-  box-shadow:
-    0 0 18px rgba(240, 193, 75, 0.85),
-    0 0 32px rgba(0, 229, 255, 0.55);
-}
-
-.jarvis-companion.is-still .jarvis-companion-ring,
-.jarvis-companion.is-still .jarvis-companion-trail {
-  animation: none;
-}
-
 .jarvis-voice {
   position: fixed;
   right: 12px;
@@ -1112,20 +1002,13 @@ textarea::placeholder {
   cursor: not-allowed;
 }
 
-@keyframes jarvis-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .scan-sweep,
   .arc-spin,
   .arc-spin-rev,
   .pulse-core,
   .particle,
-  .boot-type,
-  .jarvis-companion-ring {
+  .boot-type {
     animation: none !important;
   }
 

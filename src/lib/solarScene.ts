@@ -251,6 +251,97 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     userDriving = false;
   });
 
+  const attention = {
+    present: false,
+    nx: 0,
+    ny: 0,
+    yaw: 0,
+    pitch: 0,
+    vy: 0,
+    vp: 0,
+  };
+  const gazeOrigin = new THREE.Vector3();
+  const gazeRight = new THREE.Vector3();
+  const gazeUp = new THREE.Vector3();
+  const YAW_MAX = 0.42;
+  const PITCH_MAX = 0.3;
+
+  function onAttentionMove(event: PointerEvent) {
+    if (event.pointerType === "touch") return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (w <= 0 || h <= 0) return;
+    attention.present = true;
+    attention.nx = (event.clientX / w) * 2 - 1;
+    attention.ny = -((event.clientY / h) * 2 - 1);
+  }
+
+  function onAttentionLeave(event: MouseEvent) {
+    if (event.relatedTarget) return;
+    const x = event.clientX;
+    const y = event.clientY;
+    if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight) return;
+    attention.present = false;
+  }
+
+  function onAttentionBlur() {
+    attention.present = false;
+  }
+
+  window.addEventListener("pointermove", onAttentionMove, { passive: true });
+  window.addEventListener("mouseout", onAttentionLeave);
+  window.addEventListener("blur", onAttentionBlur);
+
+  function springAxis(pos: number, vel: number, target: number, stiff: number, damp: number, frames: number) {
+    const steps = Math.min(5, Math.max(1, Math.round(frames)));
+    let p = pos;
+    let v = vel;
+    for (let i = 0; i < steps; i++) {
+      v = (v + (target - p) * stiff) * damp;
+      p += v;
+    }
+    return { p, v };
+  }
+
+  function applySunAttention(dt: number, reduced: boolean) {
+    if (reduced) {
+      attention.yaw = 0;
+      attention.pitch = 0;
+      attention.vy = 0;
+      attention.vp = 0;
+      sun.group.position.set(0, 0, 0);
+      sun.group.rotation.set(0, 0, 0);
+      return;
+    }
+
+    gazeOrigin.set(0, 0, 0).project(camera);
+    let targetYaw = 0;
+    let targetPitch = 0;
+    if (attention.present && gazeOrigin.z < 1) {
+      const dx = attention.nx - gazeOrigin.x;
+      const dy = attention.ny - gazeOrigin.y;
+      targetYaw = THREE.MathUtils.clamp(-dx * 0.72, -YAW_MAX, YAW_MAX);
+      targetPitch = THREE.MathUtils.clamp(-dy * 0.62, -PITCH_MAX, PITCH_MAX);
+    }
+
+    const stiff = attention.present ? 0.08 : 0.04;
+    const damp = attention.present ? 0.78 : 0.86;
+    const yaw = springAxis(attention.yaw, attention.vy, targetYaw, stiff, damp, dt * 60);
+    const pitch = springAxis(attention.pitch, attention.vp, targetPitch, stiff, damp, dt * 60);
+    attention.yaw = yaw.p;
+    attention.vy = yaw.v;
+    attention.pitch = pitch.p;
+    attention.vp = pitch.v;
+
+    camera.updateMatrixWorld();
+    gazeRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+    gazeUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+    const leanX = (-attention.yaw / YAW_MAX) * 0.82;
+    const leanY = (-attention.pitch / PITCH_MAX) * 0.52;
+    sun.group.position.set(0, 0, 0).addScaledVector(gazeRight, leanX).addScaledVector(gazeUp, leanY);
+    sun.group.rotation.set(attention.pitch, attention.yaw, 0);
+  }
+
   function homeDistance() {
     const hasFleet = planets.some((planet) => planet.kind === "fleet");
     if (!hasFleet) return defaultCameraDistance(Math.max(1, planets.length));
@@ -525,7 +616,6 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
 
     stars.rotation.y += dt * 0.004 * motionScale;
     dust.rotation.y += dt * 0.01 * motionScale;
-    sun.group.rotation.y += dt * 0.08 * motionScale;
     sun.rings.rotation.z += dt * 0.22 * motionScale;
     sun.ringsB.rotation.y -= dt * 0.16 * motionScale;
     const pulse = reduced ? 1 : 1 + Math.sin(clock.elapsedTime * 1.6) * 0.018;
@@ -579,6 +669,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     }
 
     controls.update();
+    applySunAttention(dt, reduced);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -608,6 +699,9 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.domElement.removeEventListener("pointercancel", onPointerUp);
       renderer.domElement.removeEventListener("dblclick", onDblClick);
+      window.removeEventListener("pointermove", onAttentionMove);
+      window.removeEventListener("mouseout", onAttentionLeave);
+      window.removeEventListener("blur", onAttentionBlur);
       for (const p of planets) {
         p.hitBtn.remove();
         disposeObject(p.group);
@@ -791,6 +885,7 @@ function makeSun(glowTex: THREE.Texture, onReset: () => void) {
     new THREE.MeshBasicMaterial({ visible: false }),
   );
   group.add(hit);
+  group.rotation.order = "YXZ";
 
   return { group, core, material, rings, ringsB, hit };
 }

@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { AgentBridge } from "./components/AgentBridge";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette } from "./components/CommandPalette";
-import { CompanionPresence } from "./components/CompanionPresence";
 import { EmbedStage } from "./components/EmbedStage";
 import { CornerMarks, HudDecor, HudPostFx } from "./components/HudDecor";
 import { LauncherStage } from "./components/LauncherStage";
@@ -26,7 +25,6 @@ import { createId } from "./lib/cn";
 import type { VoiceAction, VoiceContext } from "./lib/jarvisVoice";
 import { clamp, LAYOUT_LIMITS } from "./lib/layout";
 import type { AppModule, FleetAgent, Overlay, ToastMessage } from "./types";
-import type { PresenceMode } from "./hooks/useJarvisVoice";
 
 type ActiveStage = { kind: "embed"; app: AppModule } | { kind: "agent"; agentId: string } | null;
 
@@ -59,7 +57,6 @@ export default function App() {
   const [focusAdd, setFocusAdd] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [presence, setPresence] = useState<PresenceMode>("idle");
   const [logs, setLogs] = useState<string[]>(() => [
     `${clock}  指揮中心初始化`,
     `${clock}  目錄載入 ${apps.length} 個模組 · AI 艦隊 ${FLEET_AGENTS.length} 名`,
@@ -455,8 +452,7 @@ export default function App() {
         />
       )}
 
-      <CompanionPresence reducedMotion={reducedMotion} attentive={presence !== "idle"} />
-      <VoiceDock context={voiceContext} onAction={onVoiceAction} onLog={pushLog} onPresence={setPresence} />
+      <VoiceDock context={voiceContext} onAction={onVoiceAction} onLog={pushLog} />
 
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((t) => t.filter((x) => x.id !== id))} />
     </div>
