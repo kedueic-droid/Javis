@@ -23,6 +23,8 @@ export function HudCanvas({ reducedMotion }: { reducedMotion: boolean }) {
     let raf = 0;
     let mx = 0.5;
     let my = 0.42;
+    let tx = mx;
+    let ty = my;
 
     const count = reducedMotion ? 16 : 52;
     const particles: Particle[] = Array.from({ length: count }, () => ({
@@ -43,12 +45,15 @@ export function HudCanvas({ reducedMotion }: { reducedMotion: boolean }) {
     };
 
     const onMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
       if (width <= 0 || height <= 0) return;
-      mx = event.clientX / width;
-      my = event.clientY / height;
+      tx = event.clientX / width;
+      ty = event.clientY / height;
     };
 
     const draw = (time: number) => {
+      mx += (tx - mx) * 0.08;
+      my += (ty - my) * 0.08;
       ctx.clearRect(0, 0, width, height);
 
       const gx = mx * width;
@@ -101,21 +106,6 @@ export function HudCanvas({ reducedMotion }: { reducedMotion: boolean }) {
         }
       }
 
-      if (!reducedMotion) {
-        const arm = 9;
-        ctx.strokeStyle = "rgba(0,229,255,0.45)";
-        ctx.beginPath();
-        ctx.moveTo(gx - arm, gy);
-        ctx.lineTo(gx - 3, gy);
-        ctx.moveTo(gx + 3, gy);
-        ctx.lineTo(gx + arm, gy);
-        ctx.moveTo(gx, gy - arm);
-        ctx.lineTo(gx, gy - 3);
-        ctx.moveTo(gx, gy + 3);
-        ctx.lineTo(gx, gy + arm);
-        ctx.stroke();
-        ctx.strokeRect(gx - 14, gy - 14, 28, 28);
-      }
     };
 
     const tick = (time: number) => {

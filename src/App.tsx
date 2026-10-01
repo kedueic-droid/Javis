@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { AgentBridge } from "./components/AgentBridge";
 import { BootSequence } from "./components/BootSequence";
 import { CommandPalette } from "./components/CommandPalette";
+import { CompanionPresence } from "./components/CompanionPresence";
 import { EmbedStage } from "./components/EmbedStage";
 import { CornerMarks, HudDecor, HudPostFx } from "./components/HudDecor";
 import { LauncherStage } from "./components/LauncherStage";
@@ -11,6 +12,7 @@ import { SideRail } from "./components/SideRail";
 import { StatusStrip } from "./components/StatusStrip";
 import { ToastStack } from "./components/ToastStack";
 import { TopBar } from "./components/TopBar";
+import { VoiceDock } from "./components/VoiceDock";
 import { FLEET_AGENTS, findFleetAgent } from "./data/fleet";
 import { useApps } from "./hooks/useApps";
 import { useClock } from "./hooks/useClock";
@@ -21,8 +23,10 @@ import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useReducedMotion } from "./hooks/useReducedMotion";
 import { playBootChime, playConfirmBlip } from "./lib/audio";
 import { createId } from "./lib/cn";
+import type { VoiceAction, VoiceContext } from "./lib/jarvisVoice";
 import { clamp, LAYOUT_LIMITS } from "./lib/layout";
 import type { AppModule, FleetAgent, Overlay, ToastMessage } from "./types";
+import type { PresenceMode } from "./hooks/useJarvisVoice";
 
 type ActiveStage = { kind: "embed"; app: AppModule } | { kind: "agent"; agentId: string } | null;
 
@@ -55,6 +59,7 @@ export default function App() {
   const [focusAdd, setFocusAdd] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [presence, setPresence] = useState<PresenceMode>("idle");
   const [logs, setLogs] = useState<string[]>(() => [
     `${clock}  指揮中心初始化`,
     `${clock}  目錄載入 ${apps.length} 個模組 · AI 艦隊 ${FLEET_AGENTS.length} 名`,
@@ -130,6 +135,65 @@ export default function App() {
   const closeStage = useCallback(() => {
     setStage(null);
   }, []);
+
+  const voiceContext = useMemo<VoiceContext>(
+    () => ({
+      apps: apps.map((app) => ({
+        id: app.id,
+        name: app.name,
+        enabled: app.enabled,
+        url: app.url,
+      })),
+      fleet: FLEET_AGENTS.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        role: agent.role,
+        mission: fleet.missionOf(agent),
+      })),
+      greetingTitle: greeting.title,
+      clock,
+    }),
+    [apps, clock, fleet.missionOf, greeting.title],
+  );
+
+  const onVoiceAction = useCallback(
+    (action: VoiceAction): string | void => {
+      switch (action.type) {
+        case "open-app": {
+          const app = apps.find((item) => item.id === action.appId);
+          if (!app) return "找不到這個模組。";
+          handleLaunch(app);
+          return;
+        }
+        case "open-fleet": {
+          const agent = findFleetAgent(action.agentId);
+          if (!agent) return "找不到這位代理人。";
+          openAgent(agent);
+          return;
+        }
+        case "open-settings":
+          setFocusAdd(false);
+          setOverlay("settings");
+          return;
+        case "open-palette":
+          setOverlay("palette");
+          return;
+        case "close":
+          if (overlay !== "none") {
+            closeOverlay();
+            return "已關閉面板。";
+          }
+          if (stage) {
+            closeStage();
+            return "已回到星系總覽。";
+          }
+          return "目前沒有開啟的面板。";
+        default:
+          return;
+      }
+    },
+    [apps, closeOverlay, closeStage, handleLaunch, openAgent, overlay, stage],
+  );
 
   const onEscape = useCallback(() => {
     if (overlay !== "none") {
@@ -390,6 +454,9 @@ export default function App() {
           onRemoveCommand={fleet.removeCommand}
         />
       )}
+
+      <CompanionPresence reducedMotion={reducedMotion} attentive={presence !== "idle"} />
+      <VoiceDock context={voiceContext} onAction={onVoiceAction} onLog={pushLog} onPresence={setPresence} />
 
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((t) => t.filter((x) => x.id !== id))} />
     </div>
