@@ -191,6 +191,8 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const scratch = new THREE.Vector3();
+  const focusPoint = new THREE.Vector3();
+  const worldPoint = new THREE.Vector3();
   const euler = new THREE.Euler(0, 0, 0, "XYZ");
   const camRight = new THREE.Vector3();
   const camUp = new THREE.Vector3();
@@ -201,7 +203,6 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
 
   const sunLight = new THREE.PointLight(0xb8ffff, 28, 48, 1.15);
   sunLight.position.set(0, 0, 0);
-  scene.add(sunLight);
 
   const fill = new THREE.DirectionalLight(0x3d9eff, 0.55);
   fill.position.set(-8, 10, 6);
@@ -211,17 +212,20 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
   scene.add(stars);
 
   const dust = makeDustRing();
-  scene.add(dust);
 
   const glowTex = createGlowTexture();
   const sun = makeSun(glowTex, () => {
     focusId = null;
     applyHomePose(false);
   });
-  scene.add(sun.group);
 
   const planetsRoot = new THREE.Group();
-  scene.add(planetsRoot);
+  const galaxy = new THREE.Group();
+  galaxy.add(sunLight);
+  galaxy.add(dust);
+  galaxy.add(sun.group);
+  galaxy.add(planetsRoot);
+  scene.add(galaxy);
 
   const planets: PlanetBody[] = [];
   let appSignature = "";
@@ -257,14 +261,22 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     ny: 0,
     yaw: 0,
     pitch: 0,
+    depth: 0,
     vy: 0,
     vp: 0,
+    vd: 0,
   };
   const gazeOrigin = new THREE.Vector3();
   const gazeRight = new THREE.Vector3();
   const gazeUp = new THREE.Vector3();
-  const YAW_MAX = 0.42;
-  const PITCH_MAX = 0.3;
+  const gazeForward = new THREE.Vector3();
+  const qYaw = new THREE.Quaternion();
+  const qPitch = new THREE.Quaternion();
+  const YAW_MAX = 0.58;
+  const PITCH_MAX = 0.4;
+  const DEPTH_MAX = 2.6;
+  const SHIFT_X = 1.55;
+  const SHIFT_Y = 0.95;
 
   function onAttentionMove(event: PointerEvent) {
     if (event.pointerType === "touch") return;
@@ -303,43 +315,70 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     return { p, v };
   }
 
-  function applySunAttention(dt: number, reduced: boolean) {
+  function applyGalaxyAttention(dt: number, reduced: boolean) {
     if (reduced) {
       attention.yaw = 0;
       attention.pitch = 0;
+      attention.depth = 0;
       attention.vy = 0;
       attention.vp = 0;
+      attention.vd = 0;
+      galaxy.position.set(0, 0, 0);
+      galaxy.quaternion.identity();
       sun.group.position.set(0, 0, 0);
-      sun.group.rotation.set(0, 0, 0);
+      sun.group.quaternion.identity();
+      sun.group.scale.setScalar(1);
+      stars.position.set(0, 0, 0);
       return;
     }
 
     gazeOrigin.set(0, 0, 0).project(camera);
     let targetYaw = 0;
     let targetPitch = 0;
+    let targetDepth = 0;
     if (attention.present && gazeOrigin.z < 1) {
       const dx = attention.nx - gazeOrigin.x;
       const dy = attention.ny - gazeOrigin.y;
-      targetYaw = THREE.MathUtils.clamp(-dx * 0.72, -YAW_MAX, YAW_MAX);
-      targetPitch = THREE.MathUtils.clamp(-dy * 0.62, -PITCH_MAX, PITCH_MAX);
+      targetYaw = THREE.MathUtils.clamp(-dx * 0.85, -YAW_MAX, YAW_MAX);
+      targetPitch = THREE.MathUtils.clamp(-dy * 0.72, -PITCH_MAX, PITCH_MAX);
+      targetDepth = Math.min(1, Math.hypot(dx, dy) / 1.15) * DEPTH_MAX;
     }
 
+    const frames = dt * 60;
     const stiff = attention.present ? 0.08 : 0.04;
     const damp = attention.present ? 0.78 : 0.86;
-    const yaw = springAxis(attention.yaw, attention.vy, targetYaw, stiff, damp, dt * 60);
-    const pitch = springAxis(attention.pitch, attention.vp, targetPitch, stiff, damp, dt * 60);
+    const yaw = springAxis(attention.yaw, attention.vy, targetYaw, stiff, damp, frames);
+    const pitch = springAxis(attention.pitch, attention.vp, targetPitch, stiff, damp, frames);
+    const depth = springAxis(attention.depth, attention.vd, targetDepth, attention.present ? 0.04 : 0.03, attention.present ? 0.84 : 0.88, frames);
     attention.yaw = yaw.p;
     attention.vy = yaw.v;
     attention.pitch = pitch.p;
     attention.vp = pitch.v;
+    attention.depth = depth.p;
+    attention.vd = depth.v;
 
     camera.updateMatrixWorld();
     gazeRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
     gazeUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
-    const leanX = (-attention.yaw / YAW_MAX) * 0.82;
-    const leanY = (-attention.pitch / PITCH_MAX) * 0.52;
-    sun.group.position.set(0, 0, 0).addScaledVector(gazeRight, leanX).addScaledVector(gazeUp, leanY);
-    sun.group.rotation.set(attention.pitch, attention.yaw, 0);
+    gazeForward.copy(controls.target).sub(camera.position);
+    if (gazeForward.lengthSq() < 1e-6) gazeForward.set(0, 0, -1);
+    gazeForward.normalize();
+
+    const leanX = (-attention.yaw / YAW_MAX) * SHIFT_X;
+    const leanY = (-attention.pitch / PITCH_MAX) * SHIFT_Y;
+    galaxy.position
+      .set(0, 0, 0)
+      .addScaledVector(gazeRight, leanX)
+      .addScaledVector(gazeUp, leanY)
+      .addScaledVector(gazeForward, -attention.depth);
+    qYaw.setFromAxisAngle(gazeUp, attention.yaw);
+    qPitch.setFromAxisAngle(gazeRight, attention.pitch);
+    galaxy.quaternion.copy(qPitch).multiply(qYaw);
+
+    sun.group.position.set(0, 0, 0);
+    sun.group.quaternion.identity();
+    sun.group.scale.setScalar(1 + (attention.depth / DEPTH_MAX) * 0.18);
+    stars.position.copy(galaxy.position).multiplyScalar(-0.22);
   }
 
   function homeDistance() {
@@ -623,13 +662,18 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     (sun.material.uniforms.uTime as { value: number }).value = clock.elapsedTime;
 
     const hoverNow = hoveredId;
+    galaxy.updateWorldMatrix(true, false);
     for (const p of planets) {
       planetPosition(p.orbit, simTime, scratch);
       if (!tug.planet || tug.planet !== p) {
         p.tug.multiplyScalar(reduced ? 0.7 : 0.88);
         if (p.tug.lengthSq() < 1e-5) p.tug.set(0, 0, 0);
       }
-      p.group.position.copy(scratch).add(p.tug);
+      worldPoint.copy(scratch);
+      galaxy.localToWorld(worldPoint);
+      worldPoint.add(p.tug);
+      galaxy.worldToLocal(worldPoint);
+      p.group.position.copy(worldPoint);
       p.spinMesh.rotation.y += dt * p.orbit.spin * (reduced ? 0.12 : 1);
 
       const hot = p.id === activeId || p.id === hoverNow;
@@ -657,7 +701,8 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
       const body = planets.find((p) => p.id === activeId);
       if (body) {
         const lerp = 1 - Math.exp(-dt * 3.1);
-        controls.target.lerp(body.group.position, lerp);
+        body.group.getWorldPosition(focusPoint);
+        controls.target.lerp(focusPoint, lerp);
         const offset = scratch.copy(camera.position).sub(controls.target);
         const want = 4.6 + body.look.radius * 2.4;
         const nextR = THREE.MathUtils.lerp(offset.length(), want, lerp * 0.55);
@@ -669,7 +714,7 @@ export function createSolarScene(host: SolarSceneHost, hooks: SolarSceneHooks): 
     }
 
     controls.update();
-    applySunAttention(dt, reduced);
+    applyGalaxyAttention(dt, reduced);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
