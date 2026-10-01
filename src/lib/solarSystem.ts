@@ -145,6 +145,86 @@ export function orbitForIndex(index: number, total: number): PlanetOrbit {
   };
 }
 
+const FLEET_LOOKS: PlanetLook[] = [
+  {
+    color: "#f6d36b",
+    emissive: "#6a4a10",
+    atmosphere: "#ffe7a8",
+    roughness: 0.28,
+    metalness: 0.62,
+    radius: 0.4,
+    ring: { color: "#ffe7a8", inner: 1.45, outer: 2.05 },
+  },
+  {
+    color: "#c9864a",
+    emissive: "#4a2c10",
+    atmosphere: "#ffd0a4",
+    roughness: 0.32,
+    metalness: 0.55,
+    radius: 0.34,
+  },
+  {
+    color: "#e58aa4",
+    emissive: "#5a2038",
+    atmosphere: "#ffc4d4",
+    roughness: 0.3,
+    metalness: 0.5,
+    radius: 0.34,
+  },
+  {
+    color: "#b7b15a",
+    emissive: "#3e3a10",
+    atmosphere: "#efe7a4",
+    roughness: 0.34,
+    metalness: 0.48,
+    radius: 0.33,
+  },
+  {
+    color: "#8d97ea",
+    emissive: "#242858",
+    atmosphere: "#d5dbff",
+    roughness: 0.3,
+    metalness: 0.58,
+    radius: 0.33,
+  },
+  {
+    color: "#c9a0ff",
+    emissive: "#3a2060",
+    atmosphere: "#edd9ff",
+    roughness: 0.3,
+    metalness: 0.52,
+    radius: 0.34,
+  },
+  {
+    color: "#7ddec8",
+    emissive: "#0e4038",
+    atmosphere: "#c8fff0",
+    roughness: 0.32,
+    metalness: 0.5,
+    radius: 0.35,
+  },
+];
+
+export function lookForFleet(index: number): PlanetLook {
+  return FLEET_LOOKS[index] ?? FLEET_LOOKS[index % FLEET_LOOKS.length] ?? FALLBACK_LOOK;
+}
+
+/** Outer ribbon shared by the AI fleet, outside the app planets. */
+export function orbitForFleet(index: number, count: number, appCount: number): PlanetOrbit {
+  const appSpacing = appCount > 6 ? 1.42 : 1.62;
+  const appOuter = appCount <= 0 ? 3.45 : 3.45 + Math.max(0, appCount - 1) * appSpacing;
+  const total = Math.max(count, 1);
+  const spread = index - (total - 1) / 2;
+  return {
+    radius: appOuter + 2.55,
+    speed: 0.052,
+    inclination: ((14 + spread * 2.2) * Math.PI) / 180,
+    omega: 0.42,
+    phase: (index / total) * Math.PI * 2,
+    spin: 0.4 + (index % 4) * 0.08,
+  };
+}
+
 export function defaultCameraDistance(count: number): number {
   const outer = count <= 0 ? 6 : 3.45 + (count - 1) * 1.62 + 1.4;
   return Math.max(14.5, outer * 1.55);
